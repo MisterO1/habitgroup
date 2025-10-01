@@ -1,0 +1,183 @@
+import { Group, HabitProgress, User } from '@/types/interfaces';
+
+const users: User[] = [
+  {
+    id: 'user1',
+    name: 'Alex Johnson',
+    avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face',
+  },
+  {
+    id: 'user2',
+    name: 'Sarah Chen',
+    avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=100&h=100&fit=crop&crop=face',
+  },
+  {
+    id: 'user3',
+    name: 'Mike Rodriguez',
+    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face',
+  },
+  {
+    id: 'user4',
+    name: 'Emma Wilson',
+    avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop&crop=face',
+  },
+];
+
+export const currentUser: User = users[0]
+
+export const mockGroups: Group[] = [
+  {
+    id: 'group1',
+    name: 'Morning Warriors',
+    description: 'Start each day with intention and energy',
+    adminId: 'user1',
+    members: [users[0], users[1], users[2]],
+    habits: [
+      {
+        id: 'habit1',
+        title: 'Morning Exercise',
+        description: '30 minutes of physical activity',
+        startDate: '2025-01-01',
+        endDate: '2025-01-31',
+        dailyGoal: '30 minutes of exercise',
+        category: 'fitness',
+      },
+      {
+        id: 'habit2',
+        title: 'Meditation',
+        description: 'Daily mindfulness practice',
+        startDate: '2025-01-01',
+        endDate: '2025-01-31',
+        dailyGoal: '10 minutes of meditation',
+        category: 'mindfulness',
+      },
+    ],
+    createdAt: '2024-12-15T00:00:00Z',
+  },
+  {
+    id: 'group2',
+    name: 'Book Club Readers',
+    description: 'Read together, grow together',
+    adminId: 'user2',
+    members: [users[0], users[1], users[3]],
+    habits: [
+      {
+        id: 'habit3',
+        title: 'Daily Reading',
+        description: 'Read for personal growth',
+        startDate: '2025-01-01',
+        endDate: '2025-02-28',
+        dailyGoal: 'Read 20 pages',
+        category: 'reading',
+      },
+    ],
+    createdAt: '2024-12-10T00:00:00Z',
+  },
+  {
+    id: 'group3',
+    name: 'Productivity Masters',
+    description: 'Building better work habits',
+    adminId: 'user3',
+    members: [users[0], users[2], users[3]],
+    habits: [
+      {
+        id: 'habit4',
+        title: 'Deep Work Session',
+        description: 'Focused work without distractions',
+        startDate: '2025-01-01',
+        endDate: '2025-01-31',
+        dailyGoal: '2 hours of deep work',
+        category: 'productivity',
+      },
+      {
+        id: 'habit5',
+        title: 'Learning New Skill',
+        description: 'Continuous learning and improvement',
+        startDate: '2025-01-01',
+        endDate: '2025-03-31',
+        dailyGoal: '30 minutes of skill practice',
+        category: 'learning',
+      },
+    ],
+    createdAt: '2024-12-20T00:00:00Z',
+  },
+];
+
+export const mockProgress: HabitProgress[] = [
+  // Recent progress for current user
+  {
+    id: 'progress1',
+    habitId: 'habit1',
+    userId: 'user1',
+    groupId: 'group1',
+    date: '2025-10-15',
+    completed: true,
+    feeling: 'great',
+    comment: 'Had an amazing workout this morning! Feeling energized.',
+    createdAt: '2025-10-15T07:30:00Z',
+  },
+  {
+    id: 'progress2',
+    habitId: 'habit2',
+    userId: 'user1',
+    groupId: 'group1',
+    date: '2025-10-15',
+    completed: true,
+    feeling: 'good',
+    comment: 'Peaceful meditation session. Mind feels clear.',
+    createdAt: '2025-10-15T08:00:00Z',
+  },
+  {
+    id: 'progress3',
+    habitId: 'habit3',
+    userId: 'user1',
+    groupId: 'group2',
+    date: '2025-10-15',
+    completed: false,
+    feeling: 'struggling',
+    comment: 'Busy day, will catch up tomorrow.',
+    createdAt: '2025-10-15T22:00:00Z',
+  },
+  {
+    id: 'progress4',
+    habitId: 'habit1',
+    userId: 'user2',
+    groupId: 'group1',
+    date: '2025-01-15',
+    completed: true,
+    feeling: 'good',
+    comment: 'Great morning run in the park!',
+    createdAt: '2025-10-15T06:45:00Z',
+  },
+  {
+    id: 'progress5',
+    habitId: 'habit1',
+    userId: 'user1',
+    groupId: 'group1',
+    date: '2025-01-14',
+    completed: true,
+    feeling: 'great',
+    createdAt: '2025-10-14T07:15:00Z',
+  },
+  {
+    id: 'progress6',
+    habitId: 'habit2',
+    userId: 'user1',
+    groupId: 'group1',
+    date: '2025-10-14',
+    completed: true,
+    feeling: 'good',
+    createdAt: '2025-10-14T07:45:00Z',
+  },
+  {
+    id: 'progress7',
+    habitId: 'habit4',
+    userId: 'user1',
+    groupId: 'group3',
+    date: '2025-10-15',
+    completed: true,
+    feeling: 'great',
+    comment: 'Completed a major project milestone today!',
+    createdAt: '2025-10-15T16:00:00Z',
+  },
+];
