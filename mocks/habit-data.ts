@@ -1,4 +1,4 @@
-import { Group, HabitProgress, User } from '@/types/interfaces';
+import { Group, HabitProgress, Profile } from '@/types/interfaces';
 
 const users: User[] = [
   {
@@ -23,7 +23,7 @@ const users: User[] = [
   },
 ];
 
-export const currentUser: User = users[0]
+export const currentUser: Profile = users[0]
 
 export const mockGroups: Group[] = [
   {
@@ -39,7 +39,7 @@ export const mockGroups: Group[] = [
         description: '30 minutes of physical activity',
         startDate: '2025-01-01',
         endDate: '2025-01-31',
-        dailyGoal: '30 minutes of exercise',
+        frequency: '30 minutes of exercise',
         category: 'fitness',
       },
       {
@@ -48,7 +48,7 @@ export const mockGroups: Group[] = [
         description: 'Daily mindfulness practice',
         startDate: '2025-01-01',
         endDate: '2025-01-31',
-        dailyGoal: '10 minutes of meditation',
+        frequency: '10 minutes of meditation',
         category: 'mindfulness',
       },
     ],
@@ -67,7 +67,7 @@ export const mockGroups: Group[] = [
         description: 'Read for personal growth',
         startDate: '2025-01-01',
         endDate: '2025-02-28',
-        dailyGoal: 'Read 20 pages',
+        frequency: 'Read 20 pages',
         category: 'reading',
       },
     ],
@@ -86,7 +86,7 @@ export const mockGroups: Group[] = [
         description: 'Focused work without distractions',
         startDate: '2025-01-01',
         endDate: '2025-01-31',
-        dailyGoal: '2 hours of deep work',
+        frequency: '2 hours of deep work',
         category: 'productivity',
       },
       {
@@ -95,7 +95,7 @@ export const mockGroups: Group[] = [
         description: 'Continuous learning and improvement',
         startDate: '2025-01-01',
         endDate: '2025-03-31',
-        dailyGoal: '30 minutes of skill practice',
+        frequency: '30 minutes of skill practice',
         category: 'learning',
       },
     ],

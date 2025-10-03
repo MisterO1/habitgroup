@@ -14,7 +14,7 @@ const queryClient = new QueryClient();
 function RootLayoutNav() {
   return (
     <Stack screenOptions={{ headerBackTitle: "Back" }}>
-      <Stack.Screen name="(tabs)" options={{ headerShown: true }} />
+      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       {/* <Stack.Screen name="group/[id]" options={{ headerShown: false }} />
       <Stack.Screen name="habit/[id]" options={{ headerShown: false }} />
       <Stack.Screen name="create-group" />

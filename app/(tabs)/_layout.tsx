@@ -1,6 +1,6 @@
 import { useTheme } from "@/contexts/theme-context";
 import { Tabs } from "expo-router";
-import { Home, Settings, Users } from "lucide-react-native";
+import { Award, Home, Settings, Users } from "lucide-react-native";
 import React from "react";
 
 export default function TabLayout() {
@@ -30,6 +30,13 @@ export default function TabLayout() {
         options={{
           title: "Groups",
           tabBarIcon: ({ color }) => <Users size={24} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="habits"
+        options={{
+          title: "Habits",
+          tabBarIcon: ({ color }) => <Award size={24} color={color} />,
         }}
       />
       <Tabs.Screen

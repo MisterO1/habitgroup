@@ -32,7 +32,7 @@ export default function CreateGroupScreen() {
       description: '',
       startDate: '',
       endDate: '',
-      dailyGoal: '',
+      frequency: '',
       category: 'fitness',
       reminderTime: '',
       enableReminder: false,
@@ -46,7 +46,7 @@ export default function CreateGroupScreen() {
       description: '',
       startDate: '',
       endDate: '',
-      dailyGoal: '',
+      frequency: '',
       category: 'fitness',
       reminderTime: '',
       enableReminder: false,
@@ -90,7 +90,7 @@ export default function CreateGroupScreen() {
       return;
     }
 
-    const validHabits = habits.filter(h => h.title.trim() && h.description.trim() && h.startDate && h.endDate && h.dailyGoal.trim());
+    const validHabits = habits.filter(h => h.title.trim() && h.description.trim() && h.startDate && h.endDate && h.frequency.trim());
     if (validHabits.length === 0) {
       showMessage('Please add at least one complete habit.', 'error');
       setSubmitting(false);
@@ -224,8 +224,8 @@ export default function CreateGroupScreen() {
                 style={[styles.input, { color: colors.text, borderColor: colors.border, backgroundColor: colors.background }]}
                 placeholder="Daily Goal"
                 placeholderTextColor={colors.textSecondary}
-                value={habit.dailyGoal}
-                onChangeText={(value) => updateHabit(habit.id, 'dailyGoal', value)}
+                value={habit.frequency}
+                onChangeText={(value) => updateHabit(habit.id, 'frequency', value)}
               />
 
               <View style={styles.categoryContainer}>

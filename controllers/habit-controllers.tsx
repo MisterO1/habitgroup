@@ -1,4 +1,4 @@
-import { getGroupsByUserId } from '@/app/controllers/group-controllers.tsx';
+import { getGroupsByUserId } from '@/controllers/group-controllers.tsx';
 import { Habit } from '@/types/interfaces';
 import { supabase } from '@/utils/supabase';
 

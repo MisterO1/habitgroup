@@ -1,5 +1,5 @@
 import { currentUser, mockGroups, mockProgress } from '@/mocks/habit-data';
-import { Group, HabitProgress, User } from '@/types/interfaces';
+import { Group, HabitProgress } from '@/types/interfaces';
 import createContextHook from '@nkzw/create-context-hook';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 // import { Platform } from 'react-native';
@@ -54,7 +54,7 @@ export const [HabitProvider, useHabits] = createContextHook(() => {
 //           await Notifications.scheduleNotificationAsync({
 //             content: {
 //               title: `Habit Reminder: ${habit.title}`,
-//               body: `Don't forget to complete your habit: ${habit.dailyGoal}`,
+//               body: `Don't forget to complete your habit: ${habit.frequency}`,
 //               sound: 'default',
 //             },
 //             trigger: triggerDate,
@@ -172,7 +172,7 @@ export const [HabitProvider, useHabits] = createContextHook(() => {
       const group = groups[groupIndex];
       const isMember = group.members.some(m => m.id === user.id);
       if (!isMember) {
-        console.warn('[HabitProvider] leaveGroup: user not in group');
+        console.warn('[HabitProvider] leaveGroup: profile not in group');
         return { error: 'You are not a member of this group' } as const;
       }
 
