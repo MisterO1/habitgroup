@@ -1,15 +1,10 @@
-import { Group, HabitProgress, Profile } from '@/types/interfaces';
+import { Group, HabitProgress } from '@/types/interfaces';
 
-const users: User[] = [
+const users = [
   {
     id: 'user1',
     name: 'Alex Johnson',
     avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face',
-  },
-  {
-    id: 'user2',
-    name: 'Sarah Chen',
-    avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=100&h=100&fit=crop&crop=face',
   },
   {
     id: 'user3',
@@ -23,14 +18,14 @@ const users: User[] = [
   },
 ];
 
-export const currentUser: Profile = users[0]
+export const currentUser = users[0]
 
 export const mockGroups: Group[] = [
   {
     id: 'group1',
     name: 'Morning Warriors',
     description: 'Start each day with intention and energy',
-    adminId: 'user1',
+    owner_id: 'user1',
     members: [users[0], users[1], users[2]],
     habits: [
       {

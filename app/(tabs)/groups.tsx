@@ -1,6 +1,7 @@
 // import { useHabits } from '@/contexts/habit-context';
+import GroupCard from '@/components/groupCard';
 import { useTheme } from '@/contexts/theme-context';
-import { getUserGroups } from '@/controllers/group-controllers.tsx';
+import { getAllGroups, getUserGroups } from '@/controllers/group-controllers.tsx';
 import { listGroup } from '@/types/interfaces';
 import { Stack, router } from 'expo-router';
 import { Plus } from 'lucide-react-native';
@@ -13,11 +14,12 @@ const userId1= '47ded865-98da-447b-b185-50a1bdcda570' // Nice
 const userId2 = 'f6a3970d-d4b6-4663-a80b-98f45f644472' // kevin
 const userId3 = 'fa4b5381-df05-465b-99c7-826431c045ea' // oli
 
-export default function GroupsScreen() {
+export default function GroupsScreen({ currentUserId = userId3 }) {
   const { colors } = useTheme();
-  const [ isMounted, setIsMounted ] = useState(false)
   const [ err, setErr ] = useState('')
   const [selectedTab, setSelectedTab] = useState<'my-groups' | 'discover'>('my-groups');
+  const [ discoverFirst, setDiscoverFirst ] = useState<boolean>(false)
+  const [ mygFirst, setMygFirst ] = useState<boolean>(false)
   const insets = useSafeAreaInsets();
 
   // const [showLeaveModal, setShowLeaveModal] = useState<boolean>(false);
@@ -25,21 +27,40 @@ export default function GroupsScreen() {
   // const [deleteData, setDeleteData] = useState<boolean>(false);
   // const [submitting, setSubmitting] = useState<boolean>(false);
   const [userGroups, setUserGroups] = useState<listGroup>(null)
+  const [discoverGroups, setDiscoverGroups] = useState<listGroup>(null)
   useEffect(() => {
     async function fetchUserGroups (){
-      const {listGroup , error} = await getUserGroups(userId)
-      console.log("listGroup",listGroup)
+      const {listGroup , error} = await getUserGroups(currentUserId)
+      // console.log("listGroup",listGroup)
       if (error) {
         setErr(error.message)
         console.log("err",err)
         return
       }
       setUserGroups(listGroup as listGroup)
-      console.log("userGroups",userGroups)
-      console.log("error",error)
-      setIsMounted(true)
+      setDiscoverFirst(true)
     }
-    fetchUserGroups()
+    if (!mygFirst) fetchUserGroups()
+  },[])
+
+  useEffect(()=>{
+    async function fetchDiscoverGroups() {
+      const { data, error } = await getAllGroups()
+      if (error) {
+        setErr(error.message)
+        console.log("err",err)
+        return
+      }else if (data){
+        let l :string[] = []
+        userGroups?.forEach((g) => l.push(g.id))
+        console.log('l',l)
+        setDiscoverGroups(data.filter((g) => !l?.includes(g.id)))
+        console.log("disc", discoverGroups) 
+      }
+      // console.log("discoverGroups",discoverGroups)
+      setDiscoverFirst(true)
+    }
+    if (!discoverFirst) fetchDiscoverGroups();
   },[])
   
 
@@ -69,98 +90,6 @@ export default function GroupsScreen() {
 //     setDeleteData(false);
 //     setShowLeaveModal(true);
 //   };
-
-  const renderGroupCard = (group: { id:string, name:string, description:string, owner_id:string}) => {
-    console.log("group",group)
-    const isOwner = group.owner_id === userId;
-    
-    return (
-      <TouchableOpacity
-        key={group.id}
-        style={[styles.groupCard, { backgroundColor: colors.card, borderColor: colors.border }]}
-        onPress={() => router.push(`/group/${group.id}`)}
-      >
-        <View style={styles.groupHeader}>
-          <View style={styles.groupInfo}>
-            <Text style={[styles.groupName, { color: colors.text }]}>
-              {group.name}
-            </Text>
-            {isOwner && (
-              <View style={[styles.adminBadge, { backgroundColor: colors.primaryLight }]}>
-                <Text style={[styles.adminText, { color: colors.primary }]}>
-                  Admin
-                </Text>
-              </View>
-            )}
-          </View>
-          {/* <TouchableOpacity 
-            onPress={() => openLeaveModal(group.id)}
-            testID="openLeaveModalButton"
-            style={styles.leaveButton}
-            accessibilityLabel="Group settings"
-          >
-            <LogOut size={18} color={colors.textSecondary} />
-            <Text style={[styles.leaveButtonText, { color: colors.textSecondary }]}>Leave</Text>
-          </TouchableOpacity> */}
-        </View>
-
-        <Text style={[styles.groupDescription, { color: colors.textSecondary }]}>
-          {group.description}
-        </Text>
-
-        {/* <View style={styles.groupStats}>
-          <View style={styles.stat}>
-            <Users size={16} color={colors.textSecondary} />
-            <Text style={[styles.statText, { color: colors.textSecondary }]}>
-              {group.members.length} members
-            </Text>
-          </View>
-          <View style={styles.stat}>
-            <Calendar size={16} color={colors.textSecondary} />
-            <Text style={[styles.statText, { color: colors.textSecondary }]}>
-              {group.habits.length} habits
-            </Text>
-          </View>
-        </View>
-
-        <View style={styles.membersRow}>
-          {group.members.slice(0, 4).map((member: any, index: number) => (
-            <Image
-              key={member.id}
-              source={{ uri: member.avatar }}
-              style={[
-                styles.memberAvatar,
-                { borderColor: colors.surface },
-                index > 0 && { marginLeft: -8 }
-              ]}
-            />
-          ))}
-          {group.members.length > 4 && (
-            <View style={[styles.moreMembers, { backgroundColor: colors.border }]}>
-              <Text style={[styles.moreMembersText, { color: colors.textSecondary }]}>
-                +{group.members.length - 4}
-              </Text>
-            </View>
-          )}
-        </View>
-
-        <View style={styles.habitsPreview}>
-          {group.habits.slice(0, 2).map((habit: any) => (
-            <View key={habit.id} style={[styles.habitTag, { backgroundColor: colors.primaryLight }]}>
-              <Text style={[styles.habitTagText, { color: colors.primary }]}>
-                {habit.title}
-              </Text>
-            </View>
-          ))}
-          {group.habits.length > 2 && (
-            <Text style={[styles.moreHabits, { color: colors.textSecondary }]}>
-              +{group.habits.length - 2} more
-            </Text>
-          )}
-        </View> */}
-      </TouchableOpacity>
-    );
-  };
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background, paddingTop: insets.top }]}>
@@ -197,7 +126,9 @@ export default function GroupsScreen() {
             styles.tab,
             selectedTab === 'discover' && { backgroundColor: colors.primary }
           ]}
-          onPress={() => setSelectedTab('discover')}
+          onPress={() => {
+            setSelectedTab('discover')
+          }}
         >
           <Text style={[
             styles.tabText,
@@ -212,7 +143,7 @@ export default function GroupsScreen() {
         {selectedTab === 'my-groups' ? (
           <>
             {(userGroups && userGroups.length > 0) ? (
-              userGroups.map(renderGroupCard)
+              userGroups.map((group) => <GroupCard group={group} profileId={currentUserId} key={`joined-${group.id}`} joined={true} />)
             ) : (
               <View style={[styles.emptyState, { backgroundColor: colors.card }]}>
                 <Text style={[styles.emptyTitle, { color: colors.text }]}>
@@ -228,16 +159,22 @@ export default function GroupsScreen() {
             )}
           </>
         ) : (
-          <View style={[styles.emptyState, { backgroundColor: colors.card }]}>
-            <Text style={[styles.emptyTitle, { color: colors.text }]}>
-              Discover Groups
-            </Text>
-            <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
-              Find and join groups that match your interests
-            </Text>
-          </View>
+          (discoverGroups && discoverGroups.length > 0) ? (
+            <>
+              {discoverGroups.map((group) => <GroupCard group={group} profileId={currentUserId} key={`discover-${group.id}`} joined={false}/>)}
+            </>
+          ) : (
+            <View style={[styles.emptyState, { backgroundColor: colors.card }]}>
+              <Text style={[styles.emptyTitle, { color: colors.text }]}>
+                Discover Groups
+              </Text>
+              <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
+                Find and join groups that match your interests
+              </Text>
+            </View>
+          )
         )}
-      </ScrollView>
+      </ScrollView> 
 
       {/* <Modal visible={showLeaveModal} transparent animationType="fade" onRequestClose={() => setShowLeaveModal(false)}>
         <View style={styles.modalBackdrop} testID="leaveModalBackdrop">

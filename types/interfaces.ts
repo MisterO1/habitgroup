@@ -30,16 +30,29 @@ export interface Habit {
 }
   
 export interface Group {
-  id: string;
+  id: string | null;
   name: string;
   description: string;
   owner_id: string;
-  habitId: Pick<Habit, 'id'>;
   createdAt: string;
 }
 
 export type listGroup =
-| { id: string, name: string, description: string, owner_id: string }[] 
+| { 
+    id: string, 
+    name: string, 
+    description: string, 
+    owner_id: string
+    created_at: string,
+  }[] 
+| null
+
+export type listmember =
+| { 
+    id: string, 
+    name: string, 
+    avatar: string,
+  }[] 
 | null
 
 export interface Group_members {
