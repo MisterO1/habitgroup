@@ -1,10 +1,10 @@
-export interface Profile {
-    id: string;
+export interface User {
+    id?: string;
     name: string;
-    email: string;
-    password: string;
+    email?: string;
     avatar?: string;
-    created_at: string;
+    groups?: string[];
+    created_at?: string;
   }
 
 export interface Category { 
@@ -17,25 +17,27 @@ export interface Category {
 export type Role = "owner" | "admin" | "member"
 
 export interface Habit {
-  id: string;
-  groupId: Pick<Group, 'id'>;
+  id?: string;
+  groupId: string;
   name: string;
   description: string;
   startDate: string;
   endDate?: string;
   frequency: string;
   category: Pick<Category, 'value'>;
-  reminderTime?: string; // HH:MM format
-  enableReminder?: boolean;
 }
   
 export interface Group {
-  id: string | null;
-  name: string;
-  description: string;
-  owner_id: string;
-  createdAt: string;
+  id?: string | null;
+  name: string,
+  description: string,
+  ownerId: string,
+  habits: string[],
+  members: string[],
+  createdAt?: string,
 }
+
+// -------------------------------------------------------------------------------------
 
 export type listGroup =
 | { 
@@ -64,15 +66,12 @@ export interface Group_members {
 }
   
 export interface HabitProgress {
-  id: string;
+  id?: string;
   habitId: string;
-  userId: string;
-  groupId: string; // to delete ?
-  date: string;
+  date: Date;
   completed: boolean;
   feeling?: 'great' | 'good' | 'okay' | 'struggling' | 'difficult';
   comment?: string;
-  createdAt: string;
 }
   
 export interface DayProgress {

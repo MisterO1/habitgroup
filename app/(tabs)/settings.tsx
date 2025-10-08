@@ -1,5 +1,5 @@
-import { useHabits } from '@/contexts/habit-context';
 import { useTheme } from '@/contexts/theme-context';
+import { User as UserP } from '@/types/interfaces';
 import { Stack } from 'expo-router';
 import { Bell, HelpCircle, LogOut, Moon, Shield, Sun, User } from 'lucide-react-native';
 import React from 'react';
@@ -8,7 +8,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function SettingsScreen() {
   const { colors, toggleTheme, isDark } = useTheme();
-  const { user } = useHabits();
+  // const { user } = useHabits();
+  const user: UserP = { name: "oli", email: "oli@gmail.com" }
   const insets = useSafeAreaInsets();
 
   const settingsItems = [
@@ -66,7 +67,7 @@ export default function SettingsScreen() {
                 {user.name}
               </Text>
               <Text style={[styles.profileEmail, { color: colors.textSecondary }]}>
-                alex.johnson@example.com
+                {user.email}
               </Text>
             </View>
           </View>

@@ -1,3 +1,4 @@
+import CalendarDay from "@/components/calendarDay";
 import { useTheme } from '@/contexts/theme-context';
 import { ChevronLeft, ChevronRight } from 'lucide-react-native';
 import React, { useState } from 'react';
@@ -18,7 +19,7 @@ export default function Calendar({ selectedDate, onDateSelect, getDayProgress }:
   const [displayYear, setDisplayYear] = useState(today.getFullYear());
 
   const daysInMonth = new Date(displayYear, displayMonth + 1, 0).getDate();
-  const firstDayOfMonth = new Date(displayYear, displayMonth, 1).getDay();
+  const firstDayOfMonth = new Date(displayYear, displayMonth, 1).getDay();// 0 is Sunday, 1 is Monday, etc.
 
   const monthNames = [
     'January', 'February', 'March', 'April', 'May', 'June',
@@ -67,34 +68,16 @@ export default function Calendar({ selectedDate, onDateSelect, getDayProgress }:
     const progressColor = progress ? getProgressColor(progress.completionRate) : colors.border;
 
     return (
-      <TouchableOpacity
-        key={day}
-        style={[
-          styles.dayButton,
-          { borderColor: colors.border },
-          isSelected && { backgroundColor: colors.primary },
-          isToday && !isSelected && { borderColor: colors.primary, borderWidth: 2 },
-        ]}
+      <CalendarDay
+        key={`day-${day}`}
+        day={day}
+        isSelected={isSelected}
+        isToday={isToday}
+        showProgress={!!progress}
+        progressColor={progressColor}
+        colors={colors}
         onPress={() => onDateSelect(date)}
-      >
-        <Text
-          style={[
-            styles.dayText,
-            { color: colors.text },
-            isSelected && { color: 'white' },
-          ]}
-        >
-          {day}
-        </Text>
-        {progress && (
-          <View
-            style={[
-              styles.progressDot,
-              { backgroundColor: progressColor },
-            ]}
-          />
-        )}
-      </TouchableOpacity>
+      />
     );
   };
 
@@ -103,14 +86,31 @@ export default function Calendar({ selectedDate, onDateSelect, getDayProgress }:
     
     // Empty cells for days before the first day of the month
     for (let i = 0; i < firstDayOfMonth; i++) {
-      days.push(<View key={`empty-${i}`} style={styles.dayButton} />);
+      days.push(
+        <CalendarDay
+          key={`empty-${i}`}
+          isEmpty
+          colors={colors}
+        />
+      );
     }
     
     // Days of the month
     for (let day = 1; day <= daysInMonth; day++) {
       days.push(renderDay(day));
     }
-    
+
+    // Empty cells for days after the last day of the month
+    for (let i = days.length; i < 42; i++) {
+      days.push(
+        <CalendarDay
+          key={`empty-${i}`}
+          isEmpty
+          colors={colors}
+        />
+      );
+    }
+
     return days;
   };
 
@@ -153,6 +153,7 @@ export default function Calendar({ selectedDate, onDateSelect, getDayProgress }:
   );
 }
 
+
 const styles = StyleSheet.create({
   container: {
     borderRadius: 12,
@@ -187,28 +188,13 @@ const styles = StyleSheet.create({
   daysGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    justifyContent: 'space-around',
-  },
-  dayButton: {
-    width: 40,
-    height: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginVertical: 2,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: 'transparent',
-    position: 'relative',
-  },
-  dayText: {
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  progressDot: {
-    position: 'absolute',
-    bottom: 2,
-    width: 6,
-    height: 6,
-    borderRadius: 3,
+    justifyContent: 'flex-start',
+    alignItems: 'flex-start',
+    // Each day cell is 40px wide, so 7 columns = 280px, add some gap
+    width: 7 * 40,
+    alignSelf: 'center',
+    rowGap: 4,
+    columnGap: 3,
+    minHeight: 6 * 40, // up to 6 weeks
   },
 });

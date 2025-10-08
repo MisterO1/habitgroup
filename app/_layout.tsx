@@ -1,4 +1,3 @@
-import { HabitProvider } from "@/contexts/habit-context";
 import { ThemeProvider } from "@/contexts/theme-context";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Stack } from "expo-router";
@@ -15,10 +14,9 @@ function RootLayoutNav() {
   return (
     <Stack screenOptions={{ headerBackTitle: "Back" }}>
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-      {/* <Stack.Screen name="group/[id]" options={{ headerShown: false }} />
+      <Stack.Screen name="auth" options={{ headerShown: false }} />
+      <Stack.Screen name="group/[id]" options={{ headerShown: false }} />
       <Stack.Screen name="habit/[id]" options={{ headerShown: false }} />
-      <Stack.Screen name="create-group" />
-      <Stack.Screen name="modal" options={{ presentation: "modal" }} /> */}
     </Stack>
   );
 }
@@ -31,11 +29,9 @@ export default function RootLayout() {
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
-        <HabitProvider>
-          <GestureHandlerRootView style={styles.container}>
-            <RootLayoutNav />
-          </GestureHandlerRootView>
-        </HabitProvider>
+        <GestureHandlerRootView style={styles.container}>
+          <RootLayoutNav />
+        </GestureHandlerRootView>
       </ThemeProvider>
     </QueryClientProvider>
   );
