@@ -1,11 +1,13 @@
-export interface User {
+import { DocumentData, DocumentReference } from "firebase/firestore";
+
+export type UserInfo = {
     id?: string;
     name: string;
     email?: string;
     avatar?: string;
-    groups?: string[];
-    created_at?: string;
-  }
+    groups?: DocumentReference<DocumentData, DocumentData>[];
+    createdAt?: Date;
+  } | null
 
 export interface Category { 
   value: 'fitness' | 'reading' | 'creativity' | 'productivity' | 'health' | 'learning' | 'social' | 'other'; 
@@ -34,7 +36,7 @@ export interface Group {
   ownerId: string,
   habits: string[],
   members: string[],
-  createdAt?: string,
+  createdAt?: Date,
 }
 
 // -------------------------------------------------------------------------------------

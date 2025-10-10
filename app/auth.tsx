@@ -1,43 +1,79 @@
 import { useTheme } from '@/contexts/theme-context';
-import { observeAuthState, sendResetPassword, signInWithEmail, signUpWithEmail } from '@/controllers/auth-controllers';
-import { router } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import { useUser } from '@/contexts/user-context';
+import { sendResetPassword, signInWithEmail, signUpWithEmail } from '@/controllers/auth-controllers';
+import { createNewUserAndGroup } from '@/controllers/group-controllers.tsx';
+import { useRouter } from 'expo-router';
+import React, { useState } from 'react';
 import { Alert, KeyboardAvoidingView, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from "react-native-safe-area-context";
 
+
 export default function AuthScreen() {
   const { colors } = useTheme();
+  const router = useRouter();
   const [mode, setMode] = useState<'signin' | 'signup'>('signin');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const { loadUserInfo } = useUser()
 
-  useEffect(() => {
-    const unsub = observeAuthState((user) => {
-      if (user) {
-        router.replace('/(tabs)/dashboard');
+
+  const isValid = () => {
+    const required = mode === 'signup'
+      ? [
+          { label: 'Nom', value: name },
+          { label: 'Email', value: email },
+          { label: 'Mot de passe', value: password },
+        ]
+      : [
+          { label: 'Email', value: email },
+          { label: 'Mot de passe', value: password },
+        ];
+
+    for (const { label, value } of required) {
+      if (!value || !value.trim()) {
+        setError(`${label} requis`);
+        return false;
       }
-    });
-    return () => unsub();
-  }, []);
+    }
+    setError('');
+    return true;
+  }
+
 
   const handleSubmit = async () => {
-    if (loading) return;
-    setLoading(true);
+    
+    if (!isValid() || loading) return;
+
+    setLoading(true)
+    
     try {
       if (mode === 'signup') {
-        if (!name.trim()) {
-          Alert.alert('Nom manquant', 'Veuillez renseigner votre nom.');
-          return;
-        }
-        const { success, error } = await signUpWithEmail(name.trim(), email.trim(), password);
-        if (!success) throw error as Error;
+
+        const { success, user, error } = await signUpWithEmail(name.trim(), email.trim(), password);
+        if (!success || !user) throw error as Error;
+        // add user in a collection
+        const { error:errorInfo } = await createNewUserAndGroup(name.trim(), email.trim())
+        if (errorInfo) throw errorInfo as Error
+
       } else {
-        const { success, error } = await signInWithEmail(email.trim(), password);
-        if (!success) throw error as Error;
+
+        const { success, user, error } = await signInWithEmail(email.trim(), password);
+        if (!success || !user) throw error as Error;
+
       }
+      await loadUserInfo(email.trim())
+      router.replace('/(tabs)/dashboard');
+
     } catch (err: any) {
+      if (err?.message.includes("invalid-credential") || 
+          err?.message.includes("invalid-email")){
+        Alert.alert('Erreur', "email/password invalid")
+        return
+      }
+      console.log(err.message)
       Alert.alert('Erreur', err?.message ?? 'Une erreur est survenue');
     } finally {
       setLoading(false);
@@ -67,7 +103,7 @@ export default function AuthScreen() {
             placeholder="Nom"
             placeholderTextColor={colors.textSecondary}
             value={name}
-            onChangeText={setName}
+            onChangeText={(text) => { setName(text); if (error) setError(''); }}
             style={[styles.input, { borderColor: colors.border, color: colors.text }]}
             autoCapitalize="words"
           />
@@ -77,7 +113,7 @@ export default function AuthScreen() {
           placeholder="Email"
           placeholderTextColor={colors.textSecondary}
           value={email}
-          onChangeText={setEmail}
+          onChangeText={(text) => { setEmail(text); if (error) setError(''); }}
           style={[styles.input, { borderColor: colors.border, color: colors.text }]}
           autoCapitalize="none"
           keyboardType="email-address"
@@ -87,12 +123,16 @@ export default function AuthScreen() {
           placeholder="Mot de passe"
           placeholderTextColor={colors.textSecondary}
           value={password}
-          onChangeText={setPassword}
+          onChangeText={(text) => { setPassword(text); if (error) setError(''); }}
           style={[styles.input, { borderColor: colors.border, color: colors.text }]}
           secureTextEntry
           textContentType="password"
         />
-
+        { error && (
+          <View>
+            <Text style={styles.errorText}>{error}</Text>
+          </View>
+        )}
         <TouchableOpacity disabled={loading} onPress={handleSubmit} style={[styles.button, { backgroundColor: colors.tabBarActive, opacity: loading ? 0.7 : 1 }]}> 
           <Text style={styles.buttonText}>{mode === 'signin' ? 'Se connecter' : "S'inscrire"}</Text>
         </TouchableOpacity>
@@ -155,6 +195,11 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: '700',
     fontSize: 16,
+  },
+  errorText: {
+    color: 'red',
+    fontWeight:'500',
+    fontSize: 13,
   },
   link: {
     fontWeight: '600',

@@ -1,3 +1,4 @@
+import { useUser } from '@/contexts/user-context';
 import React from 'react';
 import { Text, View } from 'react-native';
 // import HabitCard from '@/components/habit-card';
@@ -199,8 +200,12 @@ import { Text, View } from 'react-native';
 //   );
 // }
 export default function Dashboard() {
+  const { userInfo } = useUser()
   return (
-    <View><Text>dashboard</Text></View>
+    <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+      <Text>Dashboard</Text>
+      <Text>Welcome {userInfo?.name}</Text>
+    </View>
   )
 }
 

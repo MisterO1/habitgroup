@@ -176,7 +176,7 @@ export const createNewUserAndGroup = async (name: string, email:string, avatar='
   } catch (error) {
     console.error("Error creating new user and group:", error)
   }
-  return { success: true, error: null }
+  return { success: true, error: null, userInfo:null }
 }
 
 // ----------------- UPDATE

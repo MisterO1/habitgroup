@@ -1,15 +1,25 @@
+import { useAuth } from '@/contexts/auth-context';
 import { useTheme } from '@/contexts/theme-context';
-import { User as UserP } from '@/types/interfaces';
-import { Stack } from 'expo-router';
+import { useUser } from '@/contexts/user-context';
+import { Stack, useRouter } from 'expo-router';
 import { Bell, HelpCircle, LogOut, Moon, Shield, Sun, User } from 'lucide-react-native';
 import React from 'react';
 import { ScrollView, StyleSheet, Switch, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function SettingsScreen() {
-  const { colors, toggleTheme, isDark } = useTheme();
-  // const { user } = useHabits();
-  const user: UserP = { name: "oli", email: "oli@gmail.com" }
+  const router = useRouter();
+  const { isAuth } = useAuth();
+  const { userInfo, clearUserInfo } = useUser()
+
+  React.useEffect(() => {
+    if (!isAuth) {
+      router.push('/auth');
+      return;
+    }
+  }, []);
+
+  const { colors, toggleTheme, isDark } = useTheme();  
   const insets = useSafeAreaInsets();
 
   const settingsItems = [
@@ -59,15 +69,15 @@ export default function SettingsScreen() {
           <View style={styles.profileHeader}>
             <View style={[styles.avatar, { backgroundColor: colors.primary }]}>
               <Text style={styles.avatarText}>
-                {user.name.split(' ').map(n => n[0]).join('')}
+                {userInfo?.name.split('')[0]}
               </Text>
             </View>
             <View style={styles.profileInfo}>
               <Text style={[styles.profileName, { color: colors.text }]}>
-                {user.name}
+                {userInfo?.name}
               </Text>
               <Text style={[styles.profileEmail, { color: colors.textSecondary }]}>
-                {user.email}
+                {userInfo?.email}
               </Text>
             </View>
           </View>
@@ -137,7 +147,24 @@ export default function SettingsScreen() {
 
         {/* Logout Section */}
         <View style={[styles.section, { backgroundColor: colors.card }]}>
-          <TouchableOpacity style={styles.settingItem}>
+          <TouchableOpacity
+            style={styles.settingItem}
+            onPress={async () => {
+              try {
+                // Optionally show a loading indicator or confirmation dialog here
+                const { signOutUser } = await import('@/controllers/auth-controllers');
+                await signOutUser();
+                await clearUserInfo()
+                // Optionally, navigate to the auth screen after sign out
+                // If using expo-router:
+                const { router } = await import('expo-router');
+                router.replace('/auth');
+              } catch (err) {
+                // Optionally handle error
+                console.error('Sign out failed', err);
+              }
+            }}
+          >
             <View style={styles.settingLeft}>
               <LogOut size={20} color={colors.error} />
               <View style={styles.settingText}>
