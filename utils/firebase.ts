@@ -1,5 +1,7 @@
+import ReactNativeAsyncStorage from '@react-native-async-storage/async-storage';
 import { getApp, getApps, initializeApp } from "firebase/app";
-import { getAuth } from "firebase/auth";
+//@ts-ignore
+import { getReactNativePersistence, initializeAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 
 const firebaseConfig = {
@@ -16,7 +18,10 @@ const firebaseConfig = {
 // Ensure we only initialize once across fast refresh and multiple imports
 const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
 
+// Initialize auth - Firebase v9+ should automatically detect AsyncStorage
+export const auth = initializeAuth(app, {
+  persistence: getReactNativePersistence(ReactNativeAsyncStorage)
+});
 export const db = getFirestore(app);
-export const auth = getAuth(app);
 export { app };
 
