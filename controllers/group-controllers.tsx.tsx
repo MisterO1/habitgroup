@@ -310,8 +310,8 @@ export const createNewUserAndGroup = async (name: string, email:string, avatar='
     const newGroupData = {
         createdAt: new Date(),
         ownerId: newUserRef.id,
-        name: "MySingleGroup-"+name,
-        description: 'Only me can see manage this group. No one can join.',
+        name: "My Single Group",
+        description: 'No one can join.',
         habits:[],
         private: true,
     }
