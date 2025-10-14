@@ -41,9 +41,9 @@ export function UserProvider({ children } : { children: React.ReactNode }) {
       const querySnapshot = await getDocs(q);
       if (!querySnapshot.empty) {
         const data = querySnapshot.docs[0].data()
-        const info = { id: data.id, ...data } as UserInfo;
+        const info = { id: querySnapshot.docs[0].id, ...data } as UserInfo;
         setUserInfo(info);
-        await AsyncStorage.setItem('userInfo', JSON.stringify(userInfo));
+        await AsyncStorage.setItem('userInfo', JSON.stringify(info));
       } else {
         console.warn(`No user info found for ${email} in Firestore and AsyncStorage`);
       }

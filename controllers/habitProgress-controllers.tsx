@@ -94,7 +94,7 @@ export const deleteHabitProgress = async (groupId: string, habitId: string, habi
 // Get habit progress for a specific date and user
 export const getHabitProgressByDate = async (groupId: string, habitId: string, date: string, userId: string) => {
   try {
-    const habitProgressRef = collection(db, "groups", groupId, "habits", habitId, "progresses");
+    const habitProgressRef = collection(db, "habits", habitId, "progresses");
     const q = query(habitProgressRef, 
       where("date", "==", date),
       where("userId", "==", userId)

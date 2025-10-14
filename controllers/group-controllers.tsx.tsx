@@ -1,8 +1,12 @@
-import { Group, GroupProgress, SingleGroup } from '@/types/interfaces';
+import { Group, GroupProgress, Habit, SingleGroup } from '@/types/interfaces';
 import { db } from '@/utils/firebase';
 import { addDoc, arrayRemove, arrayUnion, collection, deleteDoc, doc, getDoc, getDocs, limit, orderBy, query, setDoc, updateDoc, where, writeBatch } from "firebase/firestore";
+import { Alert } from 'react-native';
 
-
+const cleanObject = (obj: any) =>
+  Object.fromEntries(
+  Object.entries(obj).filter(([_, v]) => v !== undefined && v !== null && v !== '')
+);
 
 // ----------------- READ
 //get ALL Groups
@@ -65,14 +69,13 @@ export const getUserGroups = async (groups:string[]) => {
         }
 
         const data = querySnap.data()
-        //@ts-ignore
         const dataFormated = { 
-          id: data?.id,//@ts-ignore
-          ...data,
+          id: querySnap.id,
+          // ...data,
           name: data?.name ?? "",//@ts-ignore
           description: data.description ?? "",//@ts-ignore
-          ownerId: data.ownerId ?? "",
-          habits: [],
+          ownerId: data.ownerId ?? "",//@ts-ignore
+          habits: data.habits ?? [],
           members: data?.members ?? [],
           createdAt: data?.createdAt ?? null,//@ts-ignore
           private: data?.private ?? false,
@@ -91,6 +94,7 @@ export const getUserGroups = async (groups:string[]) => {
   }
 }
 
+// get group progress for a specific date
 export const getGroupProgress = async (
   groupId: string,
   date: string, // YYYY-MM-DD
@@ -257,33 +261,63 @@ export const getBy = async (ressource: string, field = "name", value='', _limit 
   }
 };
 
+//update a user
+export const updateUser = async (userId: string, userData: { name?: string, avatar?: string, groups?: string[] }) => {
+  try {
+    const userRef = doc(db, "users", userId);
+    await updateDoc(userRef, cleanObject(userData));
+    return { success: true, error: null };
+  } catch (error) {
+    console.error("Error updating user:", error);
+    return { success: false, error };
+  }
+};
+
 // ----------------- CREATE
-//create Group
-export const createGroup = async (
-    groupData: { name: string, description: string },
-    userId: string
+// create Group with Habits (batch)
+export const createGroupWithHabits = async (
+  userId:string,
+  groupData: Partial<Group>,
+  habits: Partial<Habit>[],
 ) => {
   try {
-    const userRef = doc(db,"users", userId)
-    const userSnap = await getDoc(userRef)
-    if (!userSnap.exists()) {
-        console.error(`User with Id : ${userId} does not exist. Cannot create group.`)
-        return
-    }
-    const newGroupData = {
-        createdAt: new Date(),
-        ownerId: userRef,
-        name: groupData.name,
-        description: groupData.description,
-        members: [userRef], // the owner is also a user
-        habits:[],
-        private: true,
-    }
-    const docRef = await addDoc(collection(db, "groups"), newGroupData)
-    console.log("New group created with ID:", docRef.id, "and Owner:", userSnap.data()?.name);
-    return { docRef, error:null }
+
+    const batch = writeBatch(db);
+
+    // Create the group document
+    const groupRef = doc(collection(db, "groups"));
+    let listHabitRefs: string[] = []
+    
+    // Create habit documents
+    habits.forEach(habit => {
+      const habitRef = doc(collection(db, "habits"));
+      listHabitRefs.push(habitRef.id);
+      batch.set(habitRef, cleanObject({
+        ...habit,
+        groupId: groupRef.id,
+        createdAt: new Date().toISOString().split('T')[0],
+      }));
+      console.log("Habit to create in batch:", habitRef.id, habit.name);
+    });
+
+    // console.log("Group data being cleaned:", cleanObject({
+    //   habits: listHabitRefs,
+    //   createdAt: new Date().toISOString().split('T')[0],
+    //   ...groupData,
+    // }));
+
+    batch.set(groupRef, cleanObject({
+      habits: listHabitRefs,
+      createdAt: new Date().toISOString().split('T')[0],
+      ...groupData,
+    }));
+
+    await batch.commit();  
+    console.log("Group and habits created successfully");
+    return { success: true, error: null, refs:{ groupRef, habitRefs: listHabitRefs } };
   } catch (error) {
-    return { docRef: null, error }
+    console.error("Error creating group with habits:", error);
+    return { success: false, error, refs: null };
   }
 };
 
@@ -297,6 +331,7 @@ export const createNewUserAndGroup = async (name: string, email:string, avatar='
     const newGroupRef = doc(collection(db, "singleGroups"));
 
     const newUserData = {
+        id: newUserRef.id,
         name: name,
         email: email,
         avatar: avatar,
@@ -330,7 +365,7 @@ export const createNewUserAndGroup = async (name: string, email:string, avatar='
 
 // ----------------- UPDATE
 //update Group
-export const updateGroup = async (groupId: string, groupData: { name: string, description: string }) => {
+export const updateGroup = async (groupId: string, groupData: { name: string, description: string, private:boolean }) => {
   try {
     const groupRef = doc(db, "groups", groupId)
     await setDoc(groupRef, groupData, { merge: true})
@@ -343,9 +378,18 @@ export const updateGroup = async (groupId: string, groupData: { name: string, de
 }
 // ----------------- DELETE
 //delete Group
-export const deleteGroup = async (groupId: string) => {
+export const deleteGroup = async (groupId: string, userId:string) => {
   try {
     const groupRef = doc(db, "groups", groupId)
+    const group = await getDoc(groupRef)
+    if (!group.exists()){
+      Alert.alert("Cannot delete", "Group not found. It might have been deleted already.")
+      return { success: false, error: "Group not found. It might have been deleted already." }
+    }
+    if (group.data()?.ownerId !== userId){
+      Alert.alert("Cannot delete", "You are not the owner of this group. You cannot delete it.")
+      return { success: false, error: "You are not the owner of this group. You cannot delete it." }
+    }
     await deleteDoc(groupRef)
     console.log("Group deleted successfully")
     return { success: true, error: null }
@@ -360,9 +404,12 @@ export const joinGroup = async (groupId: string, userId: string) => {
     const groupRef = doc(db, "groups", groupId)
     const groupData = await getDoc(groupRef)
     if (groupData.data()?.private) {
-      return { success: false, error: "Group is private. You cannot join private groups." }
+      Alert.alert("Cannot join", "This group is private. You cannot join it.")
+      return { success: false, error: "Group is private. You cannot join it." }
     }
     await updateDoc(groupRef, { members: arrayUnion(userId) })
+    const userRef = doc(db, "users", userId)
+    await updateDoc(userRef, { groups: arrayUnion(groupId) })
     console.log("User joined group successfully")
     return { success: true, error: null }
   } catch (error) {
@@ -375,6 +422,8 @@ export const leaveGroup = async (groupId: string, userId: string) => {
   try {
     const groupRef = doc(db, "groups", groupId)
     await updateDoc(groupRef, { members: arrayRemove(userId) })
+    const userRef = doc(db, "users", userId)
+    await updateDoc(userRef, { groups: arrayRemove(groupId) })
     console.log("User left group successfully")
     return { success: true, error: null }
   } catch (error) {

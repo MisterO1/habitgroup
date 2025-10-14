@@ -10,7 +10,7 @@ import { Group, Habit, HabitProgress, SingleGroup } from '@/types/interfaces';
 import { Stack, router } from 'expo-router';
 import { Plus } from 'lucide-react-native';
 import React, { useEffect, useState } from 'react';
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { FlatList, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function DashboardScreen() {
@@ -97,11 +97,12 @@ export default function DashboardScreen() {
         for (const habitData of groupHabits) {
           const habit: Habit = {
             id: habitData.id,
+            name: habitData.name || 'Unnamed Habit',
             groupId: groupId,
-            description: habitData.description || habitData.name || '',
+            description: habitData.description || '',
             startDate: habitData.startDate || '',
-            endDate: habitData.endDate,
-            frequency: habitData.frequency,
+            endDate: habitData.endDate || '',
+            frequency: habitData.frequency || '',
             category: habitData.category || ''
           };
 
@@ -116,9 +117,9 @@ export default function DashboardScreen() {
             habit,
             group,
             completed: habitProgress?.completed || false,
-            feeling: habitProgress?.feeling,
+            feeling: habitProgress?.feeling || '',
             hasComments: !!habitProgress?.comment,
-            comment: habitProgress?.comment,
+            comment: habitProgress?.comment || '',
           });
         }
       }
@@ -376,7 +377,7 @@ export default function DashboardScreen() {
               Your Groups
             </Text>
             <TouchableOpacity 
-              onPress={() => router.push('/(tabs)/groups')} 
+              onPress={() => router.push('/create-group')} 
               style={[styles.addButton, { backgroundColor: colors.primary }]}
             >
               <Plus size={20} color="white" />
@@ -400,24 +401,35 @@ export default function DashboardScreen() {
               </Text>
             </TouchableOpacity>
           )}
-
-          {userGroups.map(group => (
-            <TouchableOpacity
-              key={group?.id}
-              style={[styles.groupCard, { backgroundColor: colors.card, borderColor: colors.border }]}
-              onPress={() => router.push(`/group/${group?.id}`)}
-            >
-              <Text style={[styles.groupName, { color: colors.text }]}>
-                {group?.name}
-              </Text>
-              <Text style={[styles.groupDescription, { color: colors.textSecondary }]}>
-                {group?.description}
-              </Text>
-              <Text style={[styles.groupMembers, { color: colors.textSecondary }]}>
-                {group?.members.length} members • {group?.habits.length} habits
-              </Text>
-            </TouchableOpacity>
-          ))}
+          
+          <FlatList
+            data={userGroups}
+            horizontal={true}
+            renderItem={({ item: group }) => (
+              <TouchableOpacity
+                style={[styles.groupCard, { backgroundColor: colors.card, borderColor: colors.border }]}
+                onPress={() => router.push(`/group/${group?.id}`)}
+              >
+                <Text style={[styles.groupName, { color: colors.text }]}>
+                  {group?.name}
+                </Text>
+                <Text style={[styles.groupDescription, { color: colors.textSecondary }]}>
+                  {group?.description}
+                </Text>
+                <Text style={[styles.groupMembers, { color: colors.textSecondary }]}>
+                  {group?.members.length} members • {group?.habits.length} habits
+                </Text>
+              </TouchableOpacity>
+            )}
+            keyExtractor = {(_, idx) => idx.toString()}
+            ListEmptyComponent = {(
+              <View style={[styles.emptyState, { backgroundColor: colors.card }]}>
+                <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
+                  Your groups will appear here. Create or join a group to get started!
+                </Text>
+              </View>
+            )}
+          />
         </View>
       </ScrollView>
     </View>

@@ -20,8 +20,9 @@ export type UserInfo = {
 //export type Role = "owner" | "admin" | "member"
 
 export interface Habit {
-  id?: string;
-  groupId: string,
+  id: string;
+  name: string;
+  groupId: string;
   description: string;
   startDate: string;
   endDate?: string;
@@ -49,7 +50,7 @@ export interface SingleGroup {
   private: boolean,
 }
 
-// habitProgress stored in progresses subcollection of habit collection
+// habitProgress stored in progresses SubConnection of habit collection
 export interface HabitProgress {
   id?: string, // format: YYYYMMDD_userId
   userId: string,
