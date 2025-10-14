@@ -1,3 +1,4 @@
+import { Group, GroupProgress, SingleGroup } from '@/types/interfaces';
 import { db } from '@/utils/firebase';
 import { addDoc, arrayRemove, arrayUnion, collection, deleteDoc, doc, getDoc, getDocs, limit, orderBy, query, setDoc, updateDoc, where, writeBatch } from "firebase/firestore";
 
@@ -20,20 +21,170 @@ export async function getAllGroups() {
   }
 }
 
-// get all groups of a user
-export const getUserGroups = async (userId: string) => {
+// get single group of a user
+export const getSingleGroup = async (singleGroupId:string) => {
   try {
-    const q = query(collection(db, "groups"), where("members","array-contains",userId))
-    const querySnapshot = await getDocs(q);
-    querySnapshot.forEach((doc) => {
-        console.log(`${doc.id} =>`, doc.data());
-    });
-    const data = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    const error = null
-    return { data, error }
+      const singleGroupRef = doc(db, "singleGroups", singleGroupId)
+      const querySnap = await getDoc(singleGroupRef)
+      if (!querySnap.exists){
+        console.log(" No SingleGroup founded with Id :", singleGroupId)
+        return {data:null}
+      }
+
+      const data = querySnap.data()
+      //@ts-ignore
+      const dataFormated = { 
+        id: data?.id,//@ts-ignore
+        // ...data,
+        name: data.name ?? "",//@ts-ignore
+        description: data.description ?? "",//@ts-ignore
+        ownerId: data.ownerId ?? "",
+        habits: [],
+        createdAt: data?.createdAt ?? null,//@ts-ignore
+        private: data.private ?? true,
+      } as SingleGroup;
+    
+    return { data:dataFormated , error:null }
   } catch (error) {
-    const data = null
-    return { data, error }
+    console.error("Error fetching user groups:", error);
+    return { data:null, error }
+  }
+}
+
+// get all groups of a user
+export const getUserGroups = async (groups:string[]) => {
+  try {
+    // let groupRefs:DocumentReference[] = []
+    const groupDocs = await Promise.all(
+      groups.map( async (groupId) => {
+        const groupRef = doc(db, "groups", groupId)
+        const querySnap = await getDoc(groupRef)
+        if (!querySnap.exists){
+          console.log(" Group not found with groupId :", groupId)
+          return null
+        }
+
+        const data = querySnap.data()
+        //@ts-ignore
+        const dataFormated = { 
+          id: data?.id,//@ts-ignore
+          ...data,
+          name: data?.name ?? "",//@ts-ignore
+          description: data.description ?? "",//@ts-ignore
+          ownerId: data.ownerId ?? "",
+          habits: [],
+          members: data?.members ?? [],
+          createdAt: data?.createdAt ?? null,//@ts-ignore
+          private: data?.private ?? false,
+        } as Group;
+
+        return dataFormated
+      })
+    )
+    // filter null or not found groups
+    const data = groupDocs.filter((g) => g != null)
+    
+    return { data, error:null }
+  } catch (error) {
+    console.error("Error fetching user groups:", error);
+    return { data:null, error }
+  }
+}
+
+export const getGroupProgress = async (
+  groupId: string,
+  date: string, // YYYY-MM-DD
+) => {
+  try {
+    const groupRef = doc(db, "groups", groupId)
+    const progressesRef = collection(groupRef, "progresses");
+
+    // Search for the document for the given date
+    const q = query(progressesRef, where("date", "==", date));
+    const snap = await getDocs(q);
+
+    if (snap.empty) return { data:null}; // No score for this day yet
+
+    const docSnap = snap.docs[0]; // Should only be one document per date
+    const data = docSnap.data();
+    const dataFormated: GroupProgress = {
+      id: docSnap.id,
+      date: data.date,
+      completionRate: data.completionRate,
+    }
+    return { data:dataFormated, error:null }
+  } catch (error) {
+    console.log("Error getting group progress: ", error)
+    return { data:null, error}
+  }  
+}
+
+// Calculate and save group progress for a specific date
+export const calculateAndSaveGroupProgress = async (
+  groupId: string,
+  date: string,
+  userId: string
+) => {
+  try {
+    // Get all habits in the group
+    const groupRef = doc(db, "groups", groupId)
+    const habitsRef = collection(groupRef, "habits");
+    const habitsSnapshot = await getDocs(habitsRef);
+    
+    if (habitsSnapshot.empty) {
+      return { data: { completionRate: 0 }, error: null };
+    }
+
+    let totalHabits = 0;
+    let completedHabits = 0;
+
+    // For each habit, check if it's completed for this date
+    for (const habitDoc of habitsSnapshot.docs) {
+      totalHabits++;
+      
+      const progressRef = collection(groupRef, "habits", habitDoc.id, "progresses");
+      const progressQuery = query(progressRef, 
+        where("date", "==", date),
+        where("userId", "==", userId)
+      );
+      const progressSnapshot = await getDocs(progressQuery);
+      
+      if (!progressSnapshot.empty) {
+        const progressData = progressSnapshot.docs[0].data();
+        if (progressData.completed) {
+          completedHabits++;
+        }
+      }
+    }
+
+    const completionRate = totalHabits > 0 ? completedHabits / totalHabits : 0;
+
+    // Save or update group progress
+    const groupProgressData: GroupProgress = {
+      date: date,
+      completionRate: completionRate,
+    };
+
+    // Check if group progress already exists for this date
+    const progressesRef = collection(groupRef, "progresses");
+    const existingQuery = query(progressesRef, where("date", "==", date));
+    const existingSnapshot = await getDocs(existingQuery);
+
+    if (existingSnapshot.empty) {
+      // Create new group progress
+      await addDoc(progressesRef, groupProgressData);
+    } else {
+      // Update existing group progress
+      const existingDoc = existingSnapshot.docs[0];
+      await updateDoc(doc(progressesRef, existingDoc.id), {
+        completionRate: completionRate,
+      });
+    }
+
+    return { data: { completionRate }, error: null };
+  } catch (error) {
+    console.error("Error calculating group progress:", error);
+    return { data: null, error };
   }
 }
 
@@ -62,26 +213,21 @@ export const getUserNotGroups = async (userId: string, _limit = 3) => {
 }
 
 // get all members of a group
-export const getGroupMembers = async (groupId:string) => {
+export const getGroupMembers = async (groupId: string) => {
   try {
-    const q = query(collection(db, "groups"))
-    const querySnapshot = await getDocs(q);
-    const groupData = querySnapshot.docs[0].data()
-    console.log("groupData", groupData)
-    // @ts-ignore
-    const listMembersIds: string[] = groupData.members
-    let listMembersData: any[] = []
-
-    const q_ = query(collection(db, "users"), where('id', "in", listMembersIds))
-    const querySnapshot_ = await getDocs(q_);
-    querySnapshot_.docs.forEach((doc)=> listMembersData.push(doc.data()))
-
-    const data = listMembersData
-    const error = null
-    return { data, error }
+    const groupRef = doc(db, "groups", groupId)
+    const querySnapshot = await getDoc(groupRef);
+    const groupData = querySnapshot.data()
+    if (!groupData || groupData.empty){
+      console.log("no group found, so no members founded for groupId :", groupId)
+      return { data: null }
+    }
+    console.log("MembersData", groupData.members)
+    const data: string[] = groupData.members
+    return { data, error:null }
   } catch (error) {
-    const data = null
-    return { data, error }
+    console.log("Error getting list of members refs from groupId :", groupId)
+    return { data:null, error }
   }
 }
 
@@ -130,6 +276,7 @@ export const createGroup = async (
         name: groupData.name,
         description: groupData.description,
         members: [userRef], // the owner is also a user
+        habits:[],
         private: true,
     }
     const docRef = await addDoc(collection(db, "groups"), newGroupData)
@@ -147,13 +294,14 @@ export const createNewUserAndGroup = async (name: string, email:string, avatar='
 
     // 1. Create a new user document (Firestore will assign an ID)
     const newUserRef = doc(collection(db, "users")); // Get a ref with an auto-ID
-    const newGroupRef = doc(collection(db, "groups"));
+    const newGroupRef = doc(collection(db, "singleGroups"));
 
     const newUserData = {
         name: name,
         email: email,
         avatar: avatar,
-        groups: [newGroupRef],
+        singleGroup: newGroupRef.id,
+        groups: [],
         createdAt: new Date(),
     }
     batch.set(newUserRef, newUserData);
@@ -161,9 +309,10 @@ export const createNewUserAndGroup = async (name: string, email:string, avatar='
     // 2. Create the new group document, referencing the new user
     const newGroupData = {
         createdAt: new Date(),
-        ownerId: newUserRef,
-        name: "MySingleGroup",
+        ownerId: newUserRef.id,
+        name: "MySingleGroup-"+name,
         description: 'Only me can see manage this group. No one can join.',
+        habits:[],
         private: true,
     }
     batch.set(newGroupRef, newGroupData);
@@ -184,7 +333,7 @@ export const createNewUserAndGroup = async (name: string, email:string, avatar='
 export const updateGroup = async (groupId: string, groupData: { name: string, description: string }) => {
   try {
     const groupRef = doc(db, "groups", groupId)
-    await setDoc(groupRef, groupData)
+    await setDoc(groupRef, groupData, { merge: true})
     console.log("Group updated successfully")
     const error = null
     return { success: true, error }

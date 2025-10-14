@@ -7,7 +7,7 @@ import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 interface CalendarProps {
   selectedDate: string;
   onDateSelect: (date: string) => void;
-  getDayProgress?: (date: string) => { completionRate: number } | null;
+  getDayProgress?: (date: string) => Promise<number>;
 }
 
 export default function Calendar({ selectedDate, onDateSelect, getDayProgress }: CalendarProps) {
@@ -64,8 +64,9 @@ export default function Calendar({ selectedDate, onDateSelect, getDayProgress }:
     const isSelected = date === selectedDate;
     const isToday = day === today.getDate() && displayMonth === today.getMonth() && displayYear === today.getFullYear();
     
-    const progress = getDayProgress ? getDayProgress(date) : null;
-    const progressColor = progress ? getProgressColor(progress.completionRate) : colors.border;
+    // For now, we'll handle progress synchronously in the parent component
+    // The CalendarDay component will receive progress data from the parent
+    const progressColor = colors.border;
 
     return (
       <CalendarDay
@@ -73,7 +74,7 @@ export default function Calendar({ selectedDate, onDateSelect, getDayProgress }:
         day={day}
         isSelected={isSelected}
         isToday={isToday}
-        showProgress={!!progress}
+        showProgress={false} // Will be handled by parent component
         progressColor={progressColor}
         colors={colors}
         onPress={() => onDateSelect(date)}

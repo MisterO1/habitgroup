@@ -6,7 +6,7 @@ import React, { createContext, Dispatch, SetStateAction, useContext, useEffect, 
 
 type UserContextValue = {
     userInfo: UserInfo | null;
-    setUserInfo: Dispatch<SetStateAction<null>>;
+    setUserInfo: Dispatch<SetStateAction<UserInfo | null>>;
     isLoading: boolean;
     loadUserInfo: (email: string) => Promise<void>
     clearUserInfo: () => Promise<void>
@@ -32,7 +32,7 @@ export function UserProvider({ children } : { children: React.ReactNode }) {
     }
   }, [userInfo]);
 
-  const loadUserInfo = async (email: string) => {
+  const loadUserInfo = async (email: string | null) => {
     const info = await AsyncStorage.getItem('userInfo');
     if(info) {
       setUserInfo(JSON.parse(info) as UserInfo)
@@ -56,7 +56,13 @@ export function UserProvider({ children } : { children: React.ReactNode }) {
     await AsyncStorage.removeItem("userInfo")
   }
 
-  const value = useMemo(() => ({ userInfo, setUserInfo, isLoading, loadUserInfo, clearUserInfo}), [userInfo, isLoading])
+  const value = useMemo(() => ({ 
+    userInfo, 
+    setUserInfo, 
+    isLoading, 
+    loadUserInfo, 
+    clearUserInfo,
+  }), [userInfo, isLoading])
   return (
     <UserContext.Provider value={value}>
       {children}
