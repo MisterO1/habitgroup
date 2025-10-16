@@ -376,6 +376,20 @@ export const updateGroup = async (groupId: string, groupData: { name: string, de
     return { success: false, error }
   }
 }
+
+// add habit to a group
+export const addHabitToGroup = async (groupId: string, habitId: string) => {
+  try {
+    const groupRef = doc(db, "groups", groupId)
+    await updateDoc(groupRef, { habits: arrayUnion(habitId) })
+    console.log("Habit added to group successfully")
+    return { success: true, error: null }
+  } catch (error) {
+    console.error("Error adding habit to group:", error)
+    return { success: false, error }
+  }
+}
+
 // ----------------- DELETE
 //delete Group
 export const deleteGroup = async (groupId: string, userId:string) => {

@@ -10,12 +10,12 @@ export type UserInfo = {
     createdAt: Date;
   } | null
 
-// export interface Category { 
-//   value: 'fitness' | 'reading' | 'creativity' | 'productivity' | 'health' | 'learning' | 'social' | 'other'; 
-//   label: string, 
-//   description: string,
-//   icon?: string,
-// }
+export interface Category { 
+  value: 'fitness' | 'reading' | 'creativity' | 'productivity' | 'health' | 'learning' | 'social' | 'other'; 
+  label: string, 
+  description: string,
+  icon?: string,
+}
 
 //export type Role = "owner" | "admin" | "member"
 
@@ -60,10 +60,17 @@ export interface HabitProgress {
   comment?: string;
 }
 
+export type HabitDayProgress  = {
+  id?: string,
+  date: string,
+  completionRate: number, //moyenne des completed des habitProgress pour cette date
+  totalMembers: number,
+}
+
 export type GroupProgress = {
   id?: string,
   date: string,
-  completionRate: number,
+  completionRate: number, // moyenne des completionRate des habitDayProgress pour cette date
 }
 
 

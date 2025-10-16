@@ -2,26 +2,26 @@ import { HabitProgress } from "@/types/interfaces";
 import { db } from '@/utils/firebase';
 import { addDoc, collection, deleteDoc, doc, getDocs, query, updateDoc, where } from "firebase/firestore";
 
-// Add habit progress to a specific habit's progresses subcollection
-export const addHabitProgress = async (
-    groupId: string,
-    habitId: string,
-    habitProgressData: HabitProgress
-) => {
+// habits collection and groups collection are top-level collections and have their own progresses subcollections
+// each habit document has its own progresses subcollection to store habit progress for that habit
+// each group document has its own progresses subcollection to store Group progress for all habits in that group
+
+// create a new document in the "progresses" subcollection of a specific habit
+export const createHabitProgress = async ( habitId: string, habitProgressData: HabitProgress) => {
     try {
-        const habitProgressRef = collection(db, "groups", groupId, "habits", habitId, "progresses");
-        await addDoc(habitProgressRef, habitProgressData);
-        return { success: true, error: null};
+        const habitProgressRef = collection(db, "habits", habitId, "progresses");
+        const docRef = await addDoc(habitProgressRef, habitProgressData);
+        return { success: true, id: docRef.id, error: null };
     } catch (error) {
-        console.error("Error adding habit progress:", error);
-        return { success: false, error: error};
+        console.error("Error creating habit progress:", error);
+        return { success: false, id: null, error: error };
     }
-}
+};
 
 // Get habit progress for a specific habit
-export const getHabitProgress = async (groupId: string, habitId: string) => {
+export const getHabitProgress = async (habitId: string) => {
   try {
-    const habitProgressRef = collection(db, "groups", groupId, "habits", habitId, "progresses");
+    const habitProgressRef = collection(db, "habits", habitId, "progresses");
     const querySnapshot = await getDocs(habitProgressRef);
     const habitProgresses = querySnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
     return { success: true, data: habitProgresses, error: null};
@@ -31,42 +31,15 @@ export const getHabitProgress = async (groupId: string, habitId: string) => {
   }
 }
 
-// Get all habit progress for a group (all habits combined)
-export const getGroupHabitProgress = async (groupId: string) => {
-  try {
-    // First get all habits in the group
-    const habitsRef = collection(db, "groups", groupId, "habits");
-    const habitsSnapshot = await getDocs(habitsRef);
-    
-    const allProgresses: any[] = [];
-    
-    // For each habit, get its progress
-    for (const habitDoc of habitsSnapshot.docs) {
-      const progressRef = collection(db, "groups", groupId, "habits", habitDoc.id, "progresses");
-      const progressSnapshot = await getDocs(progressRef);
-      
-      progressSnapshot.docs.forEach(progressDoc => {
-        allProgresses.push({
-          id: progressDoc.id,
-          habitId: habitDoc.id,
-          ...progressDoc.data()
-        });
-      });
-    }
-    
-    return { success: true, data: allProgresses, error: null};
-  } catch (error) {
-    console.error("Error getting group habit progress:", error);
-    return { success: false, data: [], error: error};
-  }
-}
+// Get all progress for a group
+
 // Update habit progress for a specific habit
-export const updateHabitProgress = async (groupId: string, habitId: string, habitProgressData: HabitProgress) => {
+export const updateHabitProgress = async (habitId: string, habitProgressData: HabitProgress) => {
   try {
     if (!habitProgressData.id) {
         throw new Error("HabitProgress id is required for update.");
     }
-    const habitProgressDocRef = doc(db, "groups", groupId, "habits", habitId, "progresses", habitProgressData.id);
+    const habitProgressDocRef = doc(db, "habits", habitId, "progresses", habitProgressData.id);
     await updateDoc(habitProgressDocRef, {
         completed: habitProgressData.completed,
         feeling: habitProgressData.feeling,
@@ -80,9 +53,9 @@ export const updateHabitProgress = async (groupId: string, habitId: string, habi
 }
 
 // Delete habit progress for a specific habit
-export const deleteHabitProgress = async (groupId: string, habitId: string, habitProgressId: string) => {
+export const deleteHabitProgress = async ( habitId: string, habitProgressId: string) => {
   try {
-    const habitProgressDocRef = doc(db, "groups", groupId, "habits", habitId, "progresses", habitProgressId);
+    const habitProgressDocRef = doc(db, "habits", habitId, "progresses", habitProgressId);
     await deleteDoc(habitProgressDocRef);
     return { success: true, error: null};
   } catch (error) {
@@ -92,7 +65,7 @@ export const deleteHabitProgress = async (groupId: string, habitId: string, habi
 }
 
 // Get habit progress for a specific date and user
-export const getHabitProgressByDate = async (groupId: string, habitId: string, date: string, userId: string) => {
+export const getHabitProgressByDate = async (habitId: string, date: string, userId: string) => {
   try {
     const habitProgressRef = collection(db, "habits", habitId, "progresses");
     const q = query(habitProgressRef, 

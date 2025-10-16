@@ -1,11 +1,9 @@
 import Calendar from '@/components/calendar';
-import HabitCard from '@/components/habit-card';
-import HabitDetailsDropdown from '@/components/habit-details-dropdown';
 import { useTheme } from '@/contexts/theme-context';
 import { useUser } from '@/contexts/user-context';
 import { calculateAndSaveGroupProgress, getGroupProgress, getSingleGroup, getUserGroups } from '@/controllers/group-controllers.tsx';
 import { getGroupsHabits } from '@/controllers/habit-controllers';
-import { addHabitProgress, getHabitProgressByDate, updateHabitProgress as updateHabitProgressController } from '@/controllers/habitProgress-controllers';
+import { createHabitProgress, getHabitProgressByDate, updateHabitProgress as updateHabitProgressController } from '@/controllers/habitProgress-controllers';
 import { Group, Habit, HabitProgress, SingleGroup } from '@/types/interfaces';
 import { Stack, router } from 'expo-router';
 import { Plus } from 'lucide-react-native';
@@ -110,7 +108,7 @@ export default function DashboardScreen() {
             group.id, 
             habitData.id, 
             selectedDate, 
-            userInfo.id
+            // userInfo.id
           );
 
           habits.push({
@@ -146,15 +144,15 @@ export default function DashboardScreen() {
         groupId, 
         habitId, 
         selectedDate, 
-        userInfo.id
+        // userInfo.id
       );
 
       if (existingProgress) {
         // Update existing progress
-        await updateHabitProgressController(groupId, habitId, { ...habitProgressData, id: existingProgress.id });
+        await updateHabitProgressController(habitId, { ...habitProgressData, id: existingProgress.id });
       } else {
         // Create new progress
-        await addHabitProgress(groupId, habitId, habitProgressData);
+        await createHabitProgress(habitId, habitProgressData);
       }
 
       // Recalculate and save group progress
@@ -184,75 +182,57 @@ export default function DashboardScreen() {
     }
   };
   
-  const handleHabitUpdate = async (habitId: string, groupId: string, completed: boolean, feeling?: string, comment?: string) => {
-    if (!habitId?.trim() || !groupId?.trim() || !userInfo) return;
+  // const handleHabitUpdate = async (habitId: string, groupId: string, completed: boolean, feeling?: string, comment?: string) => {
+  //   if (!habitId?.trim() || !groupId?.trim() || !userInfo) return;
     
-    try {
-      const habitProgressData: HabitProgress = {
-        id: `${selectedDate.replace(/-/g, '')}_${userInfo.id}_${habitId}`,
-        userId: userInfo.id,
-        date: selectedDate,
-        completed: completed,
-        feeling: feeling?.trim() as any,
-        comment: comment?.trim(),
-      };
+  //   try {
+  //     const habitProgressData: HabitProgress = {
+  //       id: `${selectedDate.replace(/-/g, '')}_${userInfo.id}_${habitId}`,
+  //       userId: userInfo.id,
+  //       date: selectedDate,
+  //       completed: completed,
+  //       feeling: feeling?.trim() as any,
+  //       comment: comment?.trim(),
+  //     };
 
-      // Check if progress already exists
-      const { data: existingProgress } = await getHabitProgressByDate(
-        groupId, 
-        habitId, 
-        selectedDate, 
-        userInfo.id
-      );
+  //     // Check if progress already exists
+  //     const { data: existingProgress } = await getHabitProgressByDate(
+  //       groupId, 
+  //       habitId, 
+  //       selectedDate, 
+  //       // userInfo.id
+  //     );
 
-      if (existingProgress) {
-        // Update existing progress
-        await updateHabitProgressController(groupId, habitId, { ...habitProgressData, id: existingProgress.id });
-      } else {
-        // Create new progress
-        await addHabitProgress(groupId, habitId, habitProgressData);
-      }
+  //     if (existingProgress) {
+  //       // Update existing progress
+  //       await updateHabitProgressController(habitId, { ...habitProgressData, id: existingProgress.id });
+  //     } else {
+  //       // Create new progress
+  //       await createHabitProgress(habitId, habitProgressData);
+  //     }
 
-      // Recalculate and save group progress
-      if (groupId) {
-        await calculateAndSaveGroupProgress(groupId, selectedDate, userInfo.id);
-      }
+  //     // Recalculate and save group progress
+  //     if (groupId) {
+  //       await calculateAndSaveGroupProgress(groupId, selectedDate, userInfo.id);
+  //     }
 
-      // Refresh the data
-      const habits = await getSelectedDateHabits();
-      setSelectedDateHabits(habits);
+  //     // Refresh the data
+  //     const habits = await getSelectedDateHabits();
+  //     setSelectedDateHabits(habits);
       
-      const progress = await getDayProgress(selectedDate);
-      setTodayProgress(progress);
+  //     const progress = await getDayProgress(selectedDate);
+  //     setTodayProgress(progress);
 
-      setExpandedHabitId(null);
-      setExpandedGroupId(null);
-    } catch (error) {
-      console.error('Error updating habit progress:', error);
-    }
-  };
+  //     setExpandedHabitId(null);
+  //     setExpandedGroupId(null);
+  //   } catch (error) {
+  //     console.error('Error updating habit progress:', error);
+  //   }
+  // };
 
   const handleHabitPress = (habitId: string, groupId: string) => {
     // Instead of navigating, expand the habit details
     handleHabitExpand(habitId, groupId);
-  };
-
-  const getHabitComments = async (habitId: string, groupId: string, date: string) => {
-    try {
-      if (!userInfo) return [];
-      
-      const { data: habitProgress } = await getHabitProgressByDate(
-        groupId, 
-        habitId, 
-        date, 
-        userInfo.id
-      );
-      
-      return habitProgress?.comment ? [{ comment: habitProgress.comment }] : [];
-    } catch (error) {
-      console.error('Error getting habit comments:', error);
-      return [];
-    }
   };
 
   const [selectedDateHabits, setSelectedDateHabits] = useState<{
@@ -267,19 +247,19 @@ export default function DashboardScreen() {
   const [todayProgress, setTodayProgress] = useState<number>(0);
 
   // Update habits and progress when selectedDate or userGroups change
-  useEffect(() => {
-    const updateHabitsAndProgress = async () => {
-      if (userInfo && userGroups.length > 0) {
-        const habits = await getSelectedDateHabits();
-        setSelectedDateHabits(habits);
+  // useEffect(() => {
+  //   const updateHabitsAndProgress = async () => {
+  //     if (userInfo && userGroups.length > 0) {
+  //       const habits = await getSelectedDateHabits();
+  //       setSelectedDateHabits(habits);
         
-        const progress = await getDayProgress(selectedDate);
-        setTodayProgress(progress);
-      }
-    };
+  //       const progress = await getDayProgress(selectedDate);
+  //       setTodayProgress(progress);
+  //     }
+  //   };
 
-    updateHabitsAndProgress();
-  }, [selectedDate, userGroups, userInfo]);
+  //   updateHabitsAndProgress();
+  // }, [selectedDate, userGroups, userInfo]);
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background, paddingTop: insets.top }]}>
@@ -298,7 +278,7 @@ export default function DashboardScreen() {
         />
 
         {/* Progress Display */}
-        <View style={[styles.section, { marginTop: 16 }]}>
+        {/* <View style={[styles.section, { marginTop: 16 }]}>
           <View style={styles.sectionHeader}>
             <Text style={[styles.sectionTitle, { color: colors.text }]}>
               {selectedDate === new Date().toISOString().split('T')[0] ? 'Today' : 'Selected Day'}
@@ -321,19 +301,19 @@ export default function DashboardScreen() {
               </Text>
             )}
           </View>
-        </View>
+        </View> */}
 
         <View style={styles.section}>
-          <View style={styles.sectionHeader}>
+          {/* <View style={styles.sectionHeader}>
             <Text style={[styles.sectionTitle, { color: colors.text }]}>
               {selectedDate === new Date().toISOString().split('T')[0] ? 'Today' : 'Selected Day'}
             </Text>
             <Text style={[styles.progressText, { color: colors.textSecondary }]}>
               {Math.round(todayProgress * 100)}% complete
             </Text>
-          </View>
+          </View> */}
 
-          {selectedDateHabits.length > 0 ? (
+          {/* {selectedDateHabits.length > 0 ? (
             selectedDateHabits.map(({ habit, group, completed, feeling, hasComments, comment }) => (
               <React.Fragment key={`${habit.id}-${group.id}`}>
                 <HabitCard
@@ -355,9 +335,10 @@ export default function DashboardScreen() {
                       setExpandedHabitId(null);
                       setExpandedGroupId(null);
                     }}
-                    onUpdate={(completed, feeling, comment) => 
-                      handleHabitUpdate(habit.id || '', group.id, completed, feeling, comment)
-                    }
+                    // onUpdate={(completed, feeling, comment) => 
+                    //   handleHabitUpdate(habit.id || '', group.id, completed, feeling, comment)
+                    // }
+                    onUpdate={(completed, feeling, comment) => void(0)}
                   />
                 )}
               </React.Fragment>
@@ -368,7 +349,7 @@ export default function DashboardScreen() {
                 No habits for this day
               </Text>
             </View>
-          )}
+          )} */}
         </View>
 
         <View style={styles.section}>
@@ -378,6 +359,17 @@ export default function DashboardScreen() {
             </Text>
             <TouchableOpacity 
               onPress={() => router.push('/create-group')} 
+              style={[styles.addButton, { backgroundColor: colors.primary }]}
+            >
+              <Plus size={20} color="white" />
+            </TouchableOpacity>
+          </View>
+          <View style={styles.sectionHeader}>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>
+              create habit
+            </Text>
+            <TouchableOpacity 
+              onPress={() => router.push('/create-habit')} 
               style={[styles.addButton, { backgroundColor: colors.primary }]}
             >
               <Plus size={20} color="white" />

@@ -48,6 +48,7 @@ function RootLayoutNav() {
       <Stack.Screen name="group/[id]" options={{ headerShown: false }} />
       <Stack.Screen name="habit/[id]" options={{ headerShown: false }} />
       <Stack.Screen name="create-group" options={{ headerShown: false }} />
+      <Stack.Screen name="create-habit" options={{ headerShown: false }} />
     </Stack>
   );
 }
