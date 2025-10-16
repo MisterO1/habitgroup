@@ -11,6 +11,7 @@ type CalendarDayProps = {
     text: string;
     border: string;
     primary: string;
+    textSecondary: string;
   };
   onPress?: () => void;
 };
@@ -26,7 +27,11 @@ export default function CalendarDay ({
   onPress,
 }: CalendarDayProps) {
   if (isEmpty) {
-    return <View style={[styles.dayButton, { borderColor: 'transparent' }]} />;
+    return (
+      <View style={[styles.dayButton, { borderColor: 'transparent' }]}>
+        <Text style={[styles.dayText, { color: colors.textSecondary }]}></Text>
+      </View>
+    );
   }
   return (
     <TouchableOpacity

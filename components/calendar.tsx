@@ -26,7 +26,7 @@ export default function Calendar({ selectedDate, onDateSelect, getDayProgress }:
     'July', 'August', 'September', 'October', 'November', 'December'
   ];
 
-  const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat','Sun'];
 
   const formatDate = (day: number) => {
     if (day < 1 || day > 31) return '';
@@ -160,6 +160,8 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 16,
     margin: 16,
+    flexDirection: 'column',
+    alignItems: 'center',
   },
   header: {
     flexDirection: 'row',
@@ -167,6 +169,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: 16,
     paddingHorizontal: 8,
+    width: 7.9 * 40,
   },
   navButton: {
     padding: 8,
@@ -179,6 +182,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-around',
     marginBottom: 8,
+    width: 7.9 * 40, // 7 days * 40px + gaps
   },
   dayNameText: {
     fontSize: 12,
@@ -189,13 +193,10 @@ const styles = StyleSheet.create({
   daysGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    justifyContent: 'flex-start',
+    justifyContent: 'space-around',
     alignItems: 'flex-start',
     // Each day cell is 40px wide, so 7 columns = 280px, add some gap
-    width: 7 * 40,
-    alignSelf: 'center',
-    rowGap: 4,
-    columnGap: 3,
+    width: 7.9 * 40,
     minHeight: 6 * 40, // up to 6 weeks
   },
 });
