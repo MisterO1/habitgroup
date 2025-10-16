@@ -1,6 +1,7 @@
-import { Category } from '@/types/interfaces';
+import { Category, Habit } from '@/types/interfaces';
 import { db } from '@/utils/firebase';
-import { addDoc, collection, deleteDoc, doc, getDocs, setDoc } from "firebase/firestore";
+import { addDoc, arrayUnion, collection, deleteDoc, doc, getDoc, getDocs, setDoc, updateDoc } from "firebase/firestore";
+import { updateUserGH } from './group-controllers.tsx';
 
 // -GET -
 // get Group's habits
@@ -17,45 +18,29 @@ export const getGroupsHabits = async (groupId: string) => {
   }
 }
 
-// get all habits of a user
-export const getUserHabits = async (groups: string[]) => {
-    try {
-      const habits: any[] = [];
-      if (groups && Array.isArray(groups)) {
-        for (const group of groups) {
-          const { data } = await getGroupsHabits(group);
-          if (data && Array.isArray(data)) {
-            habits.push(...data);
-          }
-        }
-      }
-      return { success: true, data: habits, error: null};
-    } catch(error){
-    console.error("Error getting user's habits:", error);
-    return { success: false, data: [], error: error};
-    }
-}
-
 // -POST -
 //create habit and link it to a group
 export const createHabit = async (
   groupId: string,
-  habitData: {
-    name: string,
-    groupId: string,
-    description: string,
-    startDate: Date;
-    endDate: Date;
-    frequency: string;
-    category: string;
-    createdAt: string;
-  }
+  habitData: Partial<Habit>,
+  memberIds: string[]
 ) => {
   try {
     const habitRef = collection(db, "habits");
 
     const docRef = await addDoc(habitRef, habitData);
     console.log(`New habit '${habitData.name}' added to group '${groupId}' with ID:`, docRef.id);
+    
+    // add habit ID to the group's habits array field
+    const groupRef = doc(db, "groups", groupId);
+    await updateDoc(groupRef, {
+      habits: arrayUnion(docRef.id)
+    });
+    console.log(`Habit '${habitData.name}' linked to group '${groupId}'`);
+    // add habit ID to each member's habits array field
+    await Promise.all(
+      memberIds.map(memberId => updateUserGH(memberId, { habits: [docRef.id] }))
+    );
 
     return { success: true, error: null, id: docRef.id };
 
@@ -109,3 +94,64 @@ export const deleteHabit = async (
   }
 };
 
+// this function adds a habit ID to the habits array field of a user document
+export const addHabitToUser = async ( userId: string, habitId: string ) => {
+  try {
+    const userRef = doc(db, "users", userId);
+    await updateDoc(userRef, {
+      habits: arrayUnion(habitId)
+    });
+    console.log(`Habit '${habitId}' added to user '${userId}'`);
+    return { success: true, error: null };
+  } catch (error) {
+    console.error("Error adding habit to user:", error);
+    return { success: false, error: error };
+  }
+};
+//--------------------------------------------------
+// this function retrieve list of user habit IDs that are programmed (depending on the frequency) on a specific date for a user
+// helper: check if habit is scheduled on given date
+const isHabitScheduled = (habit: any, date: Date): boolean => {
+  const { frequency } = habit;
+  if (!frequency) return false;
+
+  const target = new Date(date);
+
+  switch (frequency.type) {
+    case "EveryDay":
+      return true;
+
+    case "specificDaysOfWeek":
+    case "WorkDays":
+      // e.g. days = [1,3,5] → Mon, Wed, Fri
+      return frequency.days.includes(target.getDay());
+
+    default:
+      return false;
+  }
+};
+// main function
+export const getHabitsScheduledForDate = async (
+  habitIds: string[],
+  date: Date
+) => {
+  const activeHabitIds: string[] = [];
+  const activeGroupIds: string[] = [];
+
+  for (const habitId of habitIds) {
+    const habitRef = doc(db, "habits", habitId);
+    const habitSnap = await getDoc(habitRef);
+
+    if (!habitSnap.exists()) continue;
+
+    const habitData = habitSnap.data();
+
+    if (isHabitScheduled(habitData, date)) {
+      activeHabitIds.push(habitId);
+      activeGroupIds.push(habitData.groupId);
+    }
+  }
+
+  return { activeHabitIds, activeGroupIds };
+};
+//--------------------------------------------

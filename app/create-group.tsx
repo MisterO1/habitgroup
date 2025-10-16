@@ -1,8 +1,7 @@
 import { useTheme } from '@/contexts/theme-context';
 import { useUser } from '@/contexts/user-context';
 import { createGroupWithHabits } from '@/controllers/group-controllers.tsx';
-import { Habit, UserInfo } from '@/types/interfaces';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Habit } from '@/types/interfaces';
 import { router } from 'expo-router';
 import { Plus, Trash2 } from 'lucide-react-native';
 import React, { useState } from 'react';
@@ -10,8 +9,10 @@ import { ScrollView, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View
 
 export default function CreateGroupScreen() {
   const { colors } = useTheme();
-  const { userInfo, setUserInfo } = useUser();
-  console.log("user info in create group", userInfo)
+  const { userInfo, loadUserInfo } = useUser();
+  if (!userInfo) {
+    throw new Error("User not logged in");
+  }
   const [groupName, setGroupName] = useState('');
   const [groupDescription, setGroupDescription] = useState('');
   const [isPrivate, setIsPrivate] = useState(false);
@@ -22,13 +23,13 @@ export default function CreateGroupScreen() {
       category: '', 
       startDate: new Date().toISOString().split('T')[0],
       endDate: '',
-      frequency: '',
+      frequency: { type: 'WorkDays', days: [0,1,2,3,4,5] },
     },
   ]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const handleHabitChange = (index: number, field: keyof Habit, value: string) => {
+  const handleHabitChange = (index: number, field: keyof Omit<Habit, 'frequency'>, value: string) => {
     const updated = [...habits];
     updated[index][field] = value;
     setHabits(updated);
@@ -42,7 +43,7 @@ export default function CreateGroupScreen() {
           category: '', 
           startDate: new Date().toISOString().split('T')[0], 
           endDate: '', 
-          frequency: '' 
+          frequency: { type: 'WorkDays', days: [0,1,2,3,4,5] } 
         }]);
   };
 
@@ -82,19 +83,14 @@ export default function CreateGroupScreen() {
         createdAt: new Date().toISOString().split('T')[0],
       }, habits);
       if (!refs) throw new Error("Failed to get references after creating group");
-      // Update userInfo's groups in context and asyncStorage
-      await AsyncStorage.setItem('userInfo', JSON.stringify({
-        ...userInfo,
-        groups: userInfo?.groups ? [...userInfo.groups, refs.groupRef.id] : [refs.groupRef.id],
-      }));
-      setUserInfo({
-        ...userInfo,
-        groups: userInfo?.groups ? [...userInfo.groups, refs.groupRef.id] : [refs.groupRef.id],
-      } as UserInfo);
-      
+
+      // Update userInfo's groups in firestore, context and asyncStorage
+      loadUserInfo(userInfo.email);
       router.replace('/(tabs)/dashboard');
+      
     } catch (e) {
       setError('Failed to create group.');
+      console.error('Error creating group:', e);
     } finally {
       setLoading(false);
     }

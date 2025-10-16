@@ -70,15 +70,8 @@ export const getUserGroups = async (groups:string[]) => {
 
         const data = querySnap.data()
         const dataFormated = { 
-          id: querySnap.id,
-          // ...data,
-          name: data?.name ?? "",//@ts-ignore
-          description: data.description ?? "",//@ts-ignore
-          ownerId: data.ownerId ?? "",//@ts-ignore
-          habits: data.habits ?? [],
-          members: data?.members ?? [],
-          createdAt: data?.createdAt ?? null,//@ts-ignore
-          private: data?.private ?? false,
+          id: groupId,
+          ...data,
         } as Group;
 
         return dataFormated
@@ -90,6 +83,36 @@ export const getUserGroups = async (groups:string[]) => {
     return { data, error:null }
   } catch (error) {
     console.error("Error fetching user groups:", error);
+    return { data:null, error }
+  }
+}
+
+export const getUserHabits = async (habits:string[]) => {
+  try {
+    const habitDocs = await Promise.all(
+      habits.map( async (habitId) => {
+        const habitRef = doc(db, "habits", habitId)
+        const querySnap = await getDoc(habitRef)
+        if (!querySnap.exists){
+          console.log(" Habit not found with habitId :", habitId)
+          return null
+        }
+
+        const data = querySnap.data()
+        const dataFormated = { 
+          id: habitId,
+          ...data,
+        } as Habit;
+
+        return dataFormated
+      })
+    )
+    // filter null or not found habits
+    const data = habitDocs.filter((h) => h != null)
+
+    return { data, error:null }
+  } catch (error) {
+    console.error("Error fetching user habits:", error);
     return { data:null, error }
   }
 }
@@ -262,10 +285,24 @@ export const getBy = async (ressource: string, field = "name", value='', _limit 
 };
 
 //update a user
-export const updateUser = async (userId: string, userData: { name?: string, avatar?: string, groups?: string[] }) => {
+export const updateUser = async (userId: string, userData: { name?: string, avatar?: string }) => {
   try {
     const userRef = doc(db, "users", userId);
     await updateDoc(userRef, cleanObject(userData));
+    return { success: true, error: null };
+  } catch (error) {
+    console.error("Error updating user:", error);
+    return { success: false, error };
+  }
+};
+// update a user with new groupId or habitId
+export const updateUserGH = async (userId: string, userData: { groups?: string[], habits?: string[] }) => {
+  try {
+    const userRef = doc(db, "users", userId);
+    await updateDoc(userRef, {
+      ...(userData.groups ? { groups: arrayUnion(...userData.groups) } : {}),
+      ...(userData.habits ? { habits: arrayUnion(...userData.habits) } : {}),
+    });
     return { success: true, error: null };
   } catch (error) {
     console.error("Error updating user:", error);
@@ -286,12 +323,12 @@ export const createGroupWithHabits = async (
 
     // Create the group document
     const groupRef = doc(collection(db, "groups"));
-    let listHabitRefs: string[] = []
+    let listHabitIds: string[] = []
     
     // Create habit documents
     habits.forEach(habit => {
       const habitRef = doc(collection(db, "habits"));
-      listHabitRefs.push(habitRef.id);
+      listHabitIds.push(habitRef.id);
       batch.set(habitRef, cleanObject({
         ...habit,
         groupId: groupRef.id,
@@ -301,20 +338,24 @@ export const createGroupWithHabits = async (
     });
 
     // console.log("Group data being cleaned:", cleanObject({
-    //   habits: listHabitRefs,
+    //   habits: listHabitIds,
     //   createdAt: new Date().toISOString().split('T')[0],
     //   ...groupData,
     // }));
 
     batch.set(groupRef, cleanObject({
-      habits: listHabitRefs,
+      habits: listHabitIds,
       createdAt: new Date().toISOString().split('T')[0],
       ...groupData,
     }));
 
     await batch.commit();  
+
+    //update user
+    await updateUserGH(userId, { groups: [groupRef.id], habits: listHabitIds });
+
     console.log("Group and habits created successfully");
-    return { success: true, error: null, refs:{ groupRef, habitRefs: listHabitRefs } };
+    return { success: true, error: null, refs:{ groupId: groupRef.id, habitIds: listHabitIds } };
   } catch (error) {
     console.error("Error creating group with habits:", error);
     return { success: false, error, refs: null };
@@ -336,8 +377,10 @@ export const createNewUserAndGroup = async (name: string, email:string, avatar='
         email: email,
         avatar: avatar,
         singleGroup: newGroupRef.id,
+        singleGroupHabits: [],
         groups: [],
-        createdAt: new Date(),
+        habits: [],
+        createdAt: new Date().toISOString().split('T')[0],
     }
     batch.set(newUserRef, newUserData);
 

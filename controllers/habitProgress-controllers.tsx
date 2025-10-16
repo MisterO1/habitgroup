@@ -6,6 +6,40 @@ import { addDoc, collection, deleteDoc, doc, getDocs, query, updateDoc, where } 
 // each habit document has its own progresses subcollection to store habit progress for that habit
 // each group document has its own progresses subcollection to store Group progress for all habits in that group
 
+// Get habit progress for a specific date and user
+export const getHabitProgressByDate = async (habitId: string, date: string, userId: string) => {
+  try {
+    const habitProgressRef = collection(db, "habits", habitId, "progresses");
+    const q = query(habitProgressRef, 
+      where("date", "==", date),
+      where("userId", "==", userId)
+    );
+    const querySnapshot = await getDocs(q);
+    
+    if (querySnapshot.empty) {
+      return { success: true, data: null, error: null };
+    }
+    
+    const progressDoc = querySnapshot.docs[0];
+    const progressData = progressDoc.data();
+    return { 
+      success: true, 
+      data: { 
+        id: progressDoc.id, 
+        userId: progressData.userId,
+        date: progressData.date,
+        completed: progressData.completed,
+        feeling: progressData.feeling,
+        comment: progressData.comment
+      }, 
+      error: null 
+    };
+  } catch (error) {
+    console.error("Error getting habit progress by date:", error);
+    return { success: false, data: null, error: error };
+  }
+}
+
 // create a new document in the "progresses" subcollection of a specific habit
 export const createHabitProgress = async ( habitId: string, habitProgressData: HabitProgress) => {
     try {
@@ -64,36 +98,4 @@ export const deleteHabitProgress = async ( habitId: string, habitProgressId: str
   }
 }
 
-// Get habit progress for a specific date and user
-export const getHabitProgressByDate = async (habitId: string, date: string, userId: string) => {
-  try {
-    const habitProgressRef = collection(db, "habits", habitId, "progresses");
-    const q = query(habitProgressRef, 
-      where("date", "==", date),
-      where("userId", "==", userId)
-    );
-    const querySnapshot = await getDocs(q);
-    
-    if (querySnapshot.empty) {
-      return { success: true, data: null, error: null };
-    }
-    
-    const progressDoc = querySnapshot.docs[0];
-    const progressData = progressDoc.data();
-    return { 
-      success: true, 
-      data: { 
-        id: progressDoc.id, 
-        userId: progressData.userId,
-        date: progressData.date,
-        completed: progressData.completed,
-        feeling: progressData.feeling,
-        comment: progressData.comment
-      }, 
-      error: null 
-    };
-  } catch (error) {
-    console.error("Error getting habit progress by date:", error);
-    return { success: false, data: null, error: error };
-  }
-}
+

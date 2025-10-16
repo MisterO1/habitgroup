@@ -1,8 +1,11 @@
 import Calendar from '@/components/calendar';
+import HabitCard from '@/components/habit-card';
+import HabitDetailsDropdown from '@/components/habit-details-dropdown';
 import { useTheme } from '@/contexts/theme-context';
 import { useUser } from '@/contexts/user-context';
-import { calculateAndSaveGroupProgress, getGroupProgress, getSingleGroup, getUserGroups } from '@/controllers/group-controllers.tsx';
-import { getGroupsHabits } from '@/controllers/habit-controllers';
+import { useAppStore } from '@/contexts/zustand';
+import { calculateAndSaveGroupProgress, getGroupProgress, getSingleGroup, getUserGroups, getUserHabits } from '@/controllers/group-controllers.tsx';
+import { getHabitsScheduledForDate } from '@/controllers/habit-controllers';
 import { createHabitProgress, getHabitProgressByDate, updateHabitProgress as updateHabitProgressController } from '@/controllers/habitProgress-controllers';
 import { Group, Habit, HabitProgress, SingleGroup } from '@/types/interfaces';
 import { Stack, router } from 'expo-router';
@@ -14,8 +17,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 export default function DashboardScreen() {
   const { colors } = useTheme();
   const { userInfo } = useUser()
-  // const { getUserGroups, getGroupProgress, updateHabitProgress, getHabitComments } = useHabits();
+  const { setSelectedSingleGroup, setSelectedGroups } = useAppStore();
   const [ userGroups, setUserGroups ] = useState<Group[]>([])
+  const [ userHabits, setUserHabits ] = useState<Habit[]>([])
   const [ singleGroup, setSingleGroup ] = useState<SingleGroup | null>(null)
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [expandedHabitId, setExpandedHabitId] = useState<string | null>(null);
@@ -51,9 +55,25 @@ export default function DashboardScreen() {
         console.error('Error fetching userGroups:', error);
       }
     };
+
+    const fetchUserHabits = async () => {
+      if (!userInfo?.groups) return;
+      
+      try {
+        const { data } = await getUserHabits(userInfo.habits);
+        if (!data) {
+          console.log("no userHabits found for userId:", userInfo.id);
+          return;
+        }
+        setUserHabits(data);
+      } catch (error) {
+        console.error('Error fetching userHabits:', error);
+      }
+    };
     
     fetchSingleGroup();    
-    fetchUserGroups();    
+    fetchUserGroups();
+    fetchUserHabits();
   }, [userInfo]);
 
   const getDayProgress = async (date: string): Promise<number> => {
@@ -71,61 +91,46 @@ export default function DashboardScreen() {
   };
 
   const getSelectedDateHabits = async () => {
-    const habits: {
+    const selectedHabits: {
       habit: Habit;
-      group: Group;
       completed: boolean;
       feeling?: string;
       hasComments: boolean;
       comment?: string;
     }[] = [];
 
-    if (!userInfo?.groups) return habits;
+    if (!userInfo?.habits) return selectedHabits;
+    const { activeHabitIds } = await getHabitsScheduledForDate(userInfo.habits, new Date(selectedDate));
+    if (activeHabitIds.length === 0) return selectedHabits;
+    const activehabits = userHabits.filter(h => activeHabitIds.includes(h.id));
 
     try {
-      for (const groupId of userInfo.groups) {
-        const group = userGroups.find(g => g.id === groupId);
-        if (!group) continue;
-
-        // Get habits for this group
-        const { data: groupHabits } = await getGroupsHabits(groupId);
-        if (!groupHabits) continue;
-
-        // For each habit, get its progress for the selected date
-        for (const habitData of groupHabits) {
-          const habit: Habit = {
-            id: habitData.id,
-            name: habitData.name || 'Unnamed Habit',
-            groupId: groupId,
-            description: habitData.description || '',
-            startDate: habitData.startDate || '',
-            endDate: habitData.endDate || '',
-            frequency: habitData.frequency || '',
-            category: habitData.category || ''
-          };
-
-          const { data: habitProgress } = await getHabitProgressByDate(
-            group.id, 
-            habitData.id, 
-            selectedDate, 
-            // userInfo.id
-          );
-
-          habits.push({
-            habit,
-            group,
-            completed: habitProgress?.completed || false,
-            feeling: habitProgress?.feeling || '',
-            hasComments: !!habitProgress?.comment,
-            comment: habitProgress?.comment || '',
-          });
+      const habitProgressPromises = activehabits.map(habit => getHabitProgressByDate(
+        habit.id, 
+        selectedDate, 
+        userInfo.id
+      ));
+      const habitProgressResults = await Promise.all(habitProgressPromises);
+      for (const [index, habit] of activehabits.entries()) {
+        const habitProgress = habitProgressResults[index];
+        if (!habitProgress.success) {
+          console.error('Error fetching habit progress for habit:', habit.id);
+          continue;
         }
+        selectedHabits.push({
+          habit,
+          completed: habitProgress?.data?.completed || false,
+          feeling: habitProgress?.data?.feeling || '',
+          hasComments: habitProgress?.data?.comment ? true : false,
+          comment: habitProgress?.data?.comment || '',
+        });
       }
+      
     } catch (error) {
       console.error('Error getting selected date habits:', error);
     }
 
-    return habits;
+    return selectedHabits;
   };
 
   const handleHabitToggle = async (habitId: string, groupId: string, completed: boolean) => {
@@ -237,7 +242,6 @@ export default function DashboardScreen() {
 
   const [selectedDateHabits, setSelectedDateHabits] = useState<{
     habit: Habit;
-    group: Group;
     completed: boolean;
     feeling?: string;
     hasComments: boolean;
@@ -247,19 +251,22 @@ export default function DashboardScreen() {
   const [todayProgress, setTodayProgress] = useState<number>(0);
 
   // Update habits and progress when selectedDate or userGroups change
-  // useEffect(() => {
-  //   const updateHabitsAndProgress = async () => {
-  //     if (userInfo && userGroups.length > 0) {
-  //       const habits = await getSelectedDateHabits();
-  //       setSelectedDateHabits(habits);
+  useEffect(() => {
+    const updateHabitsAndProgress = async () => {
+      if (userInfo && userGroups.length > 0) {
+        const selectedHabits = await getSelectedDateHabits();
+        setSelectedDateHabits(selectedHabits);
         
-  //       const progress = await getDayProgress(selectedDate);
-  //       setTodayProgress(progress);
-  //     }
-  //   };
+        // const progress = await getDayProgress(selectedDate);
+        // setTodayProgress(progress);
+      }
+    }
+    updateHabitsAndProgress();
+  }, [selectedDate, userGroups, userInfo]);
 
-  //   updateHabitsAndProgress();
-  // }, [selectedDate, userGroups, userInfo]);
+  useEffect(() => {
+    
+  }, [selectedDate])
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background, paddingTop: insets.top }]}>
@@ -313,21 +320,21 @@ export default function DashboardScreen() {
             </Text>
           </View> */}
 
-          {/* {selectedDateHabits.length > 0 ? (
-            selectedDateHabits.map(({ habit, group, completed, feeling, hasComments, comment }) => (
-              <React.Fragment key={`${habit.id}-${group.id}`}>
+          {selectedDateHabits.length > 0 ? (
+            selectedDateHabits.map(({ habit, completed, feeling, hasComments, comment }) => (
+              <React.Fragment key={`${habit.id}-${habit.groupId}`}>
                 <HabitCard
                   habit={habit}
                   completed={completed}
                   feeling={feeling}
                   hasComments={hasComments}
-                  onPress={() => handleHabitPress(habit.id || '', group.id)}
-                  onToggle={() => handleHabitToggle(habit.id || '', group.id, completed)}
+                  onPress={() => handleHabitPress(habit.id || '', habit.groupId)}
+                  onToggle={() => handleHabitToggle(habit.id || '', habit.groupId, completed)}
                 />
-                {expandedHabitId === habit.id && expandedGroupId === group.id && (
+                {expandedHabitId === habit.id && expandedGroupId === habit.groupId && (
                   <HabitDetailsDropdown
                     habit={habit}
-                    groupId={group.id}
+                    groupId={habit.groupId}
                     completed={completed}
                     feeling={feeling}
                     comment={comment}
@@ -349,7 +356,7 @@ export default function DashboardScreen() {
                 No habits for this day
               </Text>
             </View>
-          )} */}
+          )}
         </View>
 
         <View style={styles.section}>
@@ -369,7 +376,11 @@ export default function DashboardScreen() {
               create habit
             </Text>
             <TouchableOpacity 
-              onPress={() => router.push('/create-habit')} 
+              onPress={() => {
+                setSelectedSingleGroup(singleGroup || null);
+                setSelectedGroups(userGroups || []);
+                router.push('/create-habit')}
+            } 
               style={[styles.addButton, { backgroundColor: colors.primary }]}
             >
               <Plus size={20} color="white" />

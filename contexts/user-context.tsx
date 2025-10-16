@@ -33,24 +33,18 @@ export function UserProvider({ children } : { children: React.ReactNode }) {
   }, [userInfo]);
 
   const loadUserInfo = async (email: string | null) => {
-    const info = await AsyncStorage.getItem('userInfo');
-    if(info) {
-      setUserInfo(JSON.parse(info) as UserInfo)
+    const q = query(collection(db, 'users'), where("email", "==", email))
+    const querySnapshot = await getDocs(q);
+    if (!querySnapshot.empty) {
+      const data = querySnapshot.docs[0].data()
+      const info = { id: querySnapshot.docs[0].id, ...data } as UserInfo;
+      setUserInfo(info);
+      await AsyncStorage.setItem('userInfo', JSON.stringify(info));
     } else {
-      const q = query(collection(db, 'users'), where("email", "==", email))
-      const querySnapshot = await getDocs(q);
-      if (!querySnapshot.empty) {
-        const data = querySnapshot.docs[0].data()
-        const info = { id: querySnapshot.docs[0].id, ...data } as UserInfo;
-        setUserInfo(info);
-        await AsyncStorage.setItem('userInfo', JSON.stringify(info));
-      } else {
-        console.warn(`No user info found for ${email} in Firestore and AsyncStorage`);
-      }
+      console.warn(`No user info found for ${email} in Firestore and AsyncStorage`);
     }
-    
-    
   };
+  
   const clearUserInfo = async () => {
     setUserInfo(null)
     await AsyncStorage.removeItem("userInfo")

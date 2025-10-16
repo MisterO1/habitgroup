@@ -7,6 +7,7 @@ export type UserInfo = {
     avatar: string;
     singleGroup: string;
     groups: string[];
+    habits: string[];
     createdAt: Date;
   } | null
 
@@ -26,8 +27,13 @@ export interface Habit {
   description: string;
   startDate: string;
   endDate?: string;
-  frequency?: string;
+  frequency?: {
+    type: "Everyday"| "WorkDays" | "SpecificDaysOfWeek";
+    days: number[]; // for specificDays: 0=Sun, 1=Mon, ..., 6=Sat
+  };
   category: string;
+  ownerId: string;
+  createdAt: string;
 }
   
 export interface Group {
@@ -46,6 +52,7 @@ export interface SingleGroup {
   description: string,
   ownerId: string,
   habits: string[],
+  members?: string[],
   createdAt?: string,
   private: boolean,
 }
@@ -56,6 +63,7 @@ export interface HabitProgress {
   userId: string,
   date: string,
   completed: boolean,
+  isStarted?: boolean,
   feeling?: 'great' | 'good' | 'okay' | 'struggling' | 'difficult';
   comment?: string;
 }
