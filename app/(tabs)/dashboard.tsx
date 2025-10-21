@@ -4,7 +4,7 @@ import HabitDetailsDropdown from '@/components/habit-details-dropdown';
 import { useTheme } from '@/contexts/theme-context';
 import { useUser } from '@/contexts/user-context';
 import { useAppStore } from '@/contexts/zustand';
-import { calculateAndSaveGroupProgress, getGroupProgress, getSingleGroup, getUserGroups, getUserHabits } from '@/controllers/group-controllers.tsx';
+import { getSingleGroup, getUserGroups, getUserHabits } from '@/controllers/group-controllers.tsx';
 import { getHabitsScheduledForDate } from '@/controllers/habit-controllers';
 import { createHabitProgress, getHabitProgressByDate, updateHabitProgress } from '@/controllers/habitProgress-controllers';
 import { Group, Habit, HabitProgress, SingleGroup } from '@/types/interfaces';
@@ -75,20 +75,6 @@ export default function DashboardScreen() {
     fetchUserGroups();
     fetchUserHabits();
   }, [userInfo]);
-
-  const getDayProgress = async (date: string): Promise<number> => {
-    if (!userInfo?.groups || userInfo.groups.length === 0) return 0;
-    
-    try {
-      // Get progress for the first group (assuming single group for now)
-      const { data } = await getGroupProgress(userInfo.groups[0], date);
-      if (!data) return 0;
-      return data.completionRate;
-    } catch (error) {
-      console.error('Error getting day progress:', error);
-      return 0;
-    }
-  };
 
   const getSelectedDateHabits = async () => {
     const selectedHabits: {
@@ -161,15 +147,8 @@ export default function DashboardScreen() {
       // Refresh the data
       const habits = await getSelectedDateHabits();
       setSelectedDateHabits(habits);
-
-      // Recalculate and save group progress
-      const groupRef = userInfo.groups.find(gId => gId === groupId);
-      if (groupRef) {
-        await calculateAndSaveGroupProgress(groupRef, selectedDate, userInfo.id);
-      }
       
-      const progress = await getDayProgress(selectedDate);
-      setTodayProgress(progress);
+      calculateDayProgress(habits);
 
     } catch (error) {
       console.error('Error updating habit progress:', error);
@@ -216,14 +195,8 @@ export default function DashboardScreen() {
       // Refresh the data
       const habits = await getSelectedDateHabits();
       setSelectedDateHabits(habits);
-
-      // Recalculate and save group progress
-      if (groupId) {
-        await calculateAndSaveGroupProgress(groupId, selectedDate, userInfo.id);
-      }
       
-      const progress = await getDayProgress(selectedDate);
-      setTodayProgress(progress);
+      calculateDayProgress(habits);
 
       setExpandedHabitId(null);
       setExpandedGroupId(null);
@@ -248,6 +221,23 @@ export default function DashboardScreen() {
 
   const [todayProgress, setTodayProgress] = useState<number>(0);
 
+  const calculateDayProgress = (
+    selectedDateHabits:{
+      habit: Habit;
+      completed: boolean;
+      feeling?: string;
+      hasComments: boolean;
+      comment?: string;
+    }[]
+  ) => {
+    if (selectedDateHabits.length == 0) return setTodayProgress(0);
+    
+    const count = selectedDateHabits.reduce((acc,cur) => 
+      cur.completed ? 1 + acc : acc
+    ,0)
+    setTodayProgress( count/selectedDateHabits.length )
+  };
+
   // Update habits and progress when selectedDate or userGroups change
   useEffect(() => {
     const updateHabitsAndProgress = async () => {
@@ -255,8 +245,7 @@ export default function DashboardScreen() {
         const selectedHabits = await getSelectedDateHabits();
         setSelectedDateHabits(selectedHabits);
         
-        // const progress = await getDayProgress(selectedDate);
-        // setTodayProgress(progress);
+        calculateDayProgress(selectedHabits);
       }
     }
     updateHabitsAndProgress();
@@ -282,8 +271,7 @@ export default function DashboardScreen() {
           onDateSelect={setSelectedDate}
         />
 
-        {/* Progress Display */}
-        {/* <View style={[styles.section, { marginTop: 16 }]}>
+        <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={[styles.sectionTitle, { color: colors.text }]}>
               {selectedDate === new Date().toISOString().split('T')[0] ? 'Today' : 'Selected Day'}
@@ -292,31 +280,6 @@ export default function DashboardScreen() {
               {Math.round(todayProgress * 100)}% complete
             </Text>
           </View>
-          
-          <View style={[styles.emptyState, { backgroundColor: colors.card }]}>
-            <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
-              {selectedDateHabits.length > 0 
-                ? `${selectedDateHabits.length} habits for this day`
-                : 'No habits for this day'
-              }
-            </Text>
-            {userGroups.length > 0 && (
-              <Text style={[styles.emptyText, { color: colors.textSecondary, fontSize: 14, marginTop: 8 }]}>
-                Connected to {userGroups.length} group(s)
-              </Text>
-            )}
-          </View>
-        </View> */}
-
-        <View style={styles.section}>
-          {/* <View style={styles.sectionHeader}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>
-              {selectedDate === new Date().toISOString().split('T')[0] ? 'Today' : 'Selected Day'}
-            </Text>
-            <Text style={[styles.progressText, { color: colors.textSecondary }]}>
-              {Math.round(todayProgress * 100)}% complete
-            </Text>
-          </View> */}
 
           {selectedDateHabits.length > 0 ? (
             selectedDateHabits.map(({ habit, completed, feeling, hasComments, comment }) => (
