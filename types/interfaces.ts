@@ -28,7 +28,7 @@ export interface Habit {
   startDate: string;
   endDate?: string;
   frequency?: {
-    type: "Everyday"| "WorkDays" | "SpecificDaysOfWeek";
+    type: "Everyday"| "WorkDays" | "Custom";
     days: number[]; // for specificDays: 0=Sun, 1=Mon, ..., 6=Sat
   };
   category: string;
@@ -57,13 +57,12 @@ export interface SingleGroup {
   private: boolean,
 }
 
-// habitProgress stored in progresses SubConnection of habit collection
+// habitProgress stored in progresses, SubCollection of habit collection
 export interface HabitProgress {
-  id?: string, // format: YYYYMMDD_userId
+  id?: string // doc id => format: YYYYMMDD_userId
   userId: string,
   date: string,
   completed: boolean,
-  isStarted?: boolean,
   feeling?: 'great' | 'good' | 'okay' | 'struggling' | 'difficult';
   comment?: string;
 }

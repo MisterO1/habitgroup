@@ -32,7 +32,7 @@ export default function CreateHabitScreen() {
     setLoading(true);
     if (frequency === "WorkDays"){ setDays([1,2,3,4,5]) }
     else if (frequency === "Everyday"){ setDays([0,1,2,3,4,5,6]) }
-    else if (frequency === "SpecificDaysOfWeek" && days.length === 0){
+    else if (frequency === "Custom" && days.length === 0){
       setLoading(false);
       return Alert.alert('Please select at least one day for Specific Days of Week frequency');
     }
@@ -121,7 +121,7 @@ export default function CreateHabitScreen() {
 
       <Text style={{ color: colors.text, marginTop: 12 }}>Frequency</Text>
       <View style={{ flexDirection: 'row', marginTop: 6 }}>
-        {["Everyday", "WorkDays", "SpecificDaysOfWeek"].map(f => (
+        {["Everyday", "WorkDays", "Custom"].map(f => (
           <TouchableOpacity
             key={f}
             onPress={() => setFrequency(f)}

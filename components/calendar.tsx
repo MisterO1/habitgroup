@@ -26,7 +26,7 @@ export default function Calendar({ selectedDate, onDateSelect, getDayProgress }:
     'July', 'August', 'September', 'October', 'November', 'December'
   ];
 
-  const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat','Sun'];
+  const dayNames = ['Sun','Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
   const formatDate = (day: number) => {
     if (day < 1 || day > 31) return '';

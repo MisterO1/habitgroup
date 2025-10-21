@@ -121,7 +121,7 @@ const isHabitScheduled = (habit: any, date: Date): boolean => {
     case "EveryDay":
       return true;
 
-    case "specificDaysOfWeek":
+    case "Custom":
     case "WorkDays":
       // e.g. days = [1,3,5] → Mon, Wed, Fri
       return frequency.days.includes(target.getDay());

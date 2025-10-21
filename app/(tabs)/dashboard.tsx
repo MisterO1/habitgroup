@@ -6,7 +6,7 @@ import { useUser } from '@/contexts/user-context';
 import { useAppStore } from '@/contexts/zustand';
 import { calculateAndSaveGroupProgress, getGroupProgress, getSingleGroup, getUserGroups, getUserHabits } from '@/controllers/group-controllers.tsx';
 import { getHabitsScheduledForDate } from '@/controllers/habit-controllers';
-import { createHabitProgress, getHabitProgressByDate, updateHabitProgress as updateHabitProgressController } from '@/controllers/habitProgress-controllers';
+import { createHabitProgress, getHabitProgressByDate, updateHabitProgress } from '@/controllers/habitProgress-controllers';
 import { Group, Habit, HabitProgress, SingleGroup } from '@/types/interfaces';
 import { Stack, router } from 'expo-router';
 import { Plus } from 'lucide-react-native';
@@ -138,7 +138,6 @@ export default function DashboardScreen() {
     
     try {
       const habitProgressData: HabitProgress = {
-        id: `${selectedDate.replace(/-/g, '')}_${userInfo.id}_${habitId}`,
         userId: userInfo.id,
         date: selectedDate,
         completed: !completed,
@@ -146,15 +145,14 @@ export default function DashboardScreen() {
 
       // Check if progress already exists
       const { data: existingProgress } = await getHabitProgressByDate(
-        groupId, 
         habitId, 
         selectedDate, 
-        // userInfo.id
+        userInfo.id
       );
 
       if (existingProgress) {
         // Update existing progress
-        await updateHabitProgressController(habitId, { ...habitProgressData, id: existingProgress.id });
+        await updateHabitProgress(habitId, { ...habitProgressData, id: existingProgress.id });
       } else {
         // Create new progress
         await createHabitProgress(habitId, habitProgressData);
@@ -210,7 +208,7 @@ export default function DashboardScreen() {
 
   //     if (existingProgress) {
   //       // Update existing progress
-  //       await updateHabitProgressController(habitId, { ...habitProgressData, id: existingProgress.id });
+  //       await updateHabitProgress(habitId, { ...habitProgressData, id: existingProgress.id });
   //     } else {
   //       // Create new progress
   //       await createHabitProgress(habitId, habitProgressData);
