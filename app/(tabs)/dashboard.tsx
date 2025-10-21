@@ -158,18 +158,19 @@ export default function DashboardScreen() {
         await createHabitProgress(habitId, habitProgressData);
       }
 
+      // Refresh the data
+      const habits = await getSelectedDateHabits();
+      setSelectedDateHabits(habits);
+
       // Recalculate and save group progress
       const groupRef = userInfo.groups.find(gId => gId === groupId);
       if (groupRef) {
         await calculateAndSaveGroupProgress(groupRef, selectedDate, userInfo.id);
       }
-
-      // Refresh the data
-      const habits = await getSelectedDateHabits();
-      setSelectedDateHabits(habits);
       
       const progress = await getDayProgress(selectedDate);
       setTodayProgress(progress);
+
     } catch (error) {
       console.error('Error updating habit progress:', error);
     }
@@ -185,53 +186,52 @@ export default function DashboardScreen() {
     }
   };
   
-  // const handleHabitUpdate = async (habitId: string, groupId: string, completed: boolean, feeling?: string, comment?: string) => {
-  //   if (!habitId?.trim() || !groupId?.trim() || !userInfo) return;
+  const handleHabitUpdate = async (habitId: string, groupId: string, completed: boolean, feeling?: string, comment?: string) => {
+    if (!habitId?.trim() || !groupId?.trim() || !userInfo) return;
     
-  //   try {
-  //     const habitProgressData: HabitProgress = {
-  //       id: `${selectedDate.replace(/-/g, '')}_${userInfo.id}_${habitId}`,
-  //       userId: userInfo.id,
-  //       date: selectedDate,
-  //       completed: completed,
-  //       feeling: feeling?.trim() as any,
-  //       comment: comment?.trim(),
-  //     };
+    try {
+      const habitProgressData: HabitProgress = {
+        userId: userInfo.id,
+        date: selectedDate,
+        completed: completed ?? false,
+        feeling: feeling?.trim() as any ?? '',
+        comment: comment?.trim() ?? '',
+      };
 
-  //     // Check if progress already exists
-  //     const { data: existingProgress } = await getHabitProgressByDate(
-  //       groupId, 
-  //       habitId, 
-  //       selectedDate, 
-  //       // userInfo.id
-  //     );
+      // Check if progress already exists
+      const { data: existingProgress } = await getHabitProgressByDate(
+        habitId, 
+        selectedDate, 
+        userInfo.id
+      );
 
-  //     if (existingProgress) {
-  //       // Update existing progress
-  //       await updateHabitProgress(habitId, { ...habitProgressData, id: existingProgress.id });
-  //     } else {
-  //       // Create new progress
-  //       await createHabitProgress(habitId, habitProgressData);
-  //     }
+      if (existingProgress) {
+        // Update existing progress
+        await updateHabitProgress(habitId, { ...habitProgressData, id: existingProgress.id });
+      } else {
+        // Create new progress
+        await createHabitProgress(habitId, habitProgressData);
+      }
 
-  //     // Recalculate and save group progress
-  //     if (groupId) {
-  //       await calculateAndSaveGroupProgress(groupId, selectedDate, userInfo.id);
-  //     }
+      // Refresh the data
+      const habits = await getSelectedDateHabits();
+      setSelectedDateHabits(habits);
 
-  //     // Refresh the data
-  //     const habits = await getSelectedDateHabits();
-  //     setSelectedDateHabits(habits);
+      // Recalculate and save group progress
+      if (groupId) {
+        await calculateAndSaveGroupProgress(groupId, selectedDate, userInfo.id);
+      }
       
-  //     const progress = await getDayProgress(selectedDate);
-  //     setTodayProgress(progress);
+      const progress = await getDayProgress(selectedDate);
+      setTodayProgress(progress);
 
-  //     setExpandedHabitId(null);
-  //     setExpandedGroupId(null);
-  //   } catch (error) {
-  //     console.error('Error updating habit progress:', error);
-  //   }
-  // };
+      setExpandedHabitId(null);
+      setExpandedGroupId(null);
+
+    } catch (error) {
+      console.error('Error updating habit progress:', error);
+    }
+  };
 
   const handleHabitPress = (habitId: string, groupId: string) => {
     // Instead of navigating, expand the habit details
@@ -340,10 +340,9 @@ export default function DashboardScreen() {
                       setExpandedHabitId(null);
                       setExpandedGroupId(null);
                     }}
-                    // onUpdate={(completed, feeling, comment) => 
-                    //   handleHabitUpdate(habit.id || '', group.id, completed, feeling, comment)
-                    // }
-                    onUpdate={(completed, feeling, comment) => void(0)}
+                    onUpdate={(completed, feeling, comment) => 
+                      handleHabitUpdate(habit.id || '', habit.groupId, completed, feeling, comment)
+                    }
                   />
                 )}
               </React.Fragment>

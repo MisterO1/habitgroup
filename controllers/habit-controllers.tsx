@@ -110,31 +110,30 @@ export const addHabitToUser = async ( userId: string, habitId: string ) => {
 };
 //--------------------------------------------------
 // this function retrieve list of user habit IDs that are programmed (depending on the frequency) on a specific date for a user
-// helper: check if habit is scheduled on given date
-const isHabitScheduled = (habit: any, date: Date): boolean => {
-  const { frequency } = habit;
-  if (!frequency) return false;
-
-  const target = new Date(date);
-
-  switch (frequency.type) {
-    case "EveryDay":
-      return true;
-
-    case "Custom":
-    case "WorkDays":
-      // e.g. days = [1,3,5] → Mon, Wed, Fri
-      return frequency.days.includes(target.getDay());
-
-    default:
-      return false;
-  }
-};
-// main function
 export const getHabitsScheduledForDate = async (
   habitIds: string[],
   date: Date
 ) => {
+  // helper: check if habit is scheduled on given date
+  const isHabitScheduled = (habit: any, date: Date): boolean => {
+    const { frequency } = habit;
+    if (!frequency) return false;
+  
+    const target = new Date(date);
+  
+    switch (frequency.type) {
+      case "EveryDay":
+        return true;
+  
+      case "Custom":
+      case "WorkDays":
+        // e.g. days = [1,3,5] → Mon, Wed, Fri
+        return frequency.days.includes(target.getDay());
+  
+      default:
+        return false;
+    }
+  };
   const activeHabitIds: string[] = [];
   const activeGroupIds: string[] = [];
 

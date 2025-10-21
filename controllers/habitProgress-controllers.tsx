@@ -82,9 +82,9 @@ export const updateHabitProgress = async (habitId: string, habitProgressData: Ha
     }
     const habitProgressDocRef = doc(db, "habits", habitId, "progresses", habitProgressData.id);
     await updateDoc(habitProgressDocRef, {
-        completed: habitProgressData.completed,
-        feeling: habitProgressData.feeling,
-        comment: habitProgressData.comment,
+        completed: habitProgressData.completed || false,
+        feeling: habitProgressData.feeling || '',
+        comment: habitProgressData.comment || '',
     });
     return { success: true, error: null};
 
