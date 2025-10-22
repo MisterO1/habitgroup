@@ -1,6 +1,6 @@
 import { useTheme } from "@/contexts/theme-context";
 import { Tabs } from "expo-router";
-import { Award, Home, Settings, Users } from "lucide-react-native";
+import { Award, Home, Radio, Settings } from "lucide-react-native";
 import React from "react";
 
 export default function TabLayout() {
@@ -26,10 +26,10 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="groups"
+        name="status"
         options={{
-          title: "Groups",
-          tabBarIcon: ({ color }) => <Users size={24} color={color} />,
+          title: "Status",
+          tabBarIcon: ({ color }) => <Radio size={24} color={color} />,
         }}
       />
       <Tabs.Screen

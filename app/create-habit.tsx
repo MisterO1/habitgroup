@@ -11,11 +11,11 @@ import { ActivityIndicator, Alert, FlatList, StyleSheet, Text, TextInput, Toucha
 export default function CreateHabitScreen() {
   const { colors } = useTheme();
   const { userInfo } = useUser();
-  const { selectedSingleGroup, selectedGroups } = useAppStore();
+  const { userSingleGroupZus, userGroupsZus } = useAppStore();
 
   const [loading, setLoading] = useState(false);
 
-  const [groupId, setGroupId] = useState<string | null>(selectedSingleGroup?.id || null);
+  const [groupId, setGroupId] = useState<string | null>(userSingleGroupZus?.id || null);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   // currently not using custom date inputs; keep startDate as ISO string for createdAt in controller
@@ -57,7 +57,7 @@ export default function CreateHabitScreen() {
       Object.entries(habitData).forEach(([k, v]) => {
         if (v !== undefined && v !== null) cleaned[k] = v;
       });
-      const group = [selectedSingleGroup,...selectedGroups].find(g => g?.id === groupId);
+      const group = [userSingleGroupZus,...userGroupsZus].find(g => g?.id === groupId);
       const memberIds: string[] = group?.members ?? [userInfo?.id || ''];
       const res = await createHabit(groupId, cleaned, memberIds);
       if ( res.id ) {
@@ -84,17 +84,17 @@ export default function CreateHabitScreen() {
 
             <FlatList
               horizontal={false}
-              data={selectedGroups}
+              data={userGroupsZus}
               ListHeaderComponent={(
                 <TouchableOpacity
-                    key={selectedSingleGroup?.id}
-                    onPress={() => selectedSingleGroup ? setGroupId(selectedSingleGroup.id) : null}
+                    key={userSingleGroupZus?.id}
+                    onPress={() => userSingleGroupZus ? setGroupId(userSingleGroupZus.id) : null}
                     style={[
                         styles.groupOption,
-                        { backgroundColor: groupId === selectedSingleGroup?.id ? colors.primary : colors.card }
+                        { backgroundColor: groupId === userSingleGroupZus?.id ? colors.primary : colors.card }
                     ]}
                     >
-                      <Text style={{ color: groupId === selectedSingleGroup?.id ? 'white' : colors.text }}>{selectedSingleGroup?.name}</Text>
+                      <Text style={{ color: groupId === userSingleGroupZus?.id ? 'white' : colors.text }}>{userSingleGroupZus?.name}</Text>
                     </TouchableOpacity>
                  )}
               keyExtractor={(item) => item.id}

@@ -4,6 +4,37 @@ import { addDoc, arrayUnion, collection, deleteDoc, doc, getDoc, getDocs, setDoc
 import { updateUserGH } from './group-controllers.tsx';
 
 // -GET -
+// get User's habits
+export const getUserHabits = async (habits:string[]) => {
+  try {
+    const habitDocs = await Promise.all(
+      habits.map( async (habitId) => {
+        const habitRef = doc(db, "habits", habitId)
+        const querySnap = await getDoc(habitRef)
+        if (!querySnap.exists){
+          console.log(" Habit not found with habitId :", habitId)
+          return null
+        }
+
+        const data = querySnap.data()
+        const dataFormated = { 
+          id: habitId,
+          ...data,
+        } as Habit;
+
+        return dataFormated
+      })
+    )
+    // filter null or not found habits
+    const data = habitDocs.filter((h) => h != null)
+
+    return { data, error:null }
+  } catch (error) {
+    console.error("Error fetching user habits:", error);
+    return { data:null, error }
+  }
+}
+
 // get Group's habits
 export const getGroupsHabits = async (groupId: string) => {
   try {

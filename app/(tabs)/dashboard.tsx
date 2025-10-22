@@ -4,8 +4,8 @@ import HabitDetailsDropdown from '@/components/habit-details-dropdown';
 import { useTheme } from '@/contexts/theme-context';
 import { useUser } from '@/contexts/user-context';
 import { useAppStore } from '@/contexts/zustand';
-import { getSingleGroup, getUserGroups, getUserHabits } from '@/controllers/group-controllers.tsx';
-import { getHabitsScheduledForDate } from '@/controllers/habit-controllers';
+import { getSingleGroup, getUserGroups } from '@/controllers/group-controllers.tsx';
+import { getHabitsScheduledForDate, getUserHabits } from '@/controllers/habit-controllers';
 import { createHabitProgress, getHabitProgressByDate, updateHabitProgress } from '@/controllers/habitProgress-controllers';
 import { Group, Habit, HabitProgress, SingleGroup } from '@/types/interfaces';
 import { Stack, router } from 'expo-router';
@@ -17,7 +17,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 export default function DashboardScreen() {
   const { colors } = useTheme();
   const { userInfo } = useUser()
-  const { setSelectedSingleGroup, setSelectedGroups } = useAppStore();
+  const { setUserSingleGroupZus, setUserGroupsZus, setUserHabitsZus } = useAppStore();
   const [ userGroups, setUserGroups ] = useState<Group[]>([])
   const [ userHabits, setUserHabits ] = useState<Habit[]>([])
   const [ singleGroup, setSingleGroup ] = useState<SingleGroup | null>(null)
@@ -37,6 +37,7 @@ export default function DashboardScreen() {
           return;
         }
         setSingleGroup(data);
+        setUserSingleGroupZus(data);
       } catch (error) {
         console.error('Error fetching single group:', error);
       }
@@ -51,6 +52,7 @@ export default function DashboardScreen() {
           return;
         }
         setUserGroups(data);
+        setUserGroupsZus(data);
       } catch (error) {
         console.error('Error fetching userGroups:', error);
       }
@@ -66,6 +68,7 @@ export default function DashboardScreen() {
           return;
         }
         setUserHabits(data);
+        setUserHabitsZus(data)
       } catch (error) {
         console.error('Error fetching userHabits:', error);
       }
@@ -336,10 +339,7 @@ export default function DashboardScreen() {
               create habit
             </Text>
             <TouchableOpacity 
-              onPress={() => {
-                setSelectedSingleGroup(singleGroup || null);
-                setSelectedGroups(userGroups || []);
-                router.push('/create-habit')}
+              onPress={() => router.push('/create-habit')
             } 
               style={[styles.addButton, { backgroundColor: colors.primary }]}
             >

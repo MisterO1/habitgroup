@@ -81,3 +81,16 @@ export type GroupProgress = {
 }
 
 
+export type Status = {
+  id: string,
+  userId: string,
+  groupId: string,
+  habitTag: string,
+  userName: string,
+  userAvatar: string,
+  content: string,
+  imageUrl?: string,
+  createdAt: string,
+  expiresAt: string,
+  views: string[],
+}

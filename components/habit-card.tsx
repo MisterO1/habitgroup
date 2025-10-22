@@ -48,7 +48,7 @@ export default function HabitCard({
       <View style={styles.content}>
         <View style={styles.habitInfo}>
           <Text style={[styles.habitName, { color: colors.text }]}>
-            {habit.description}
+            {habit.name}
           </Text>
           <Text style={[styles.habitCategory, { color: colors.textSecondary }]}>
             {habit.category}
