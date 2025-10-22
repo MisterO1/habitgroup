@@ -57,7 +57,7 @@ const darkTheme: ThemeColors = {
 
 export const [ThemeProvider, useTheme] = createContextHook(() => {
   const systemTheme = useColorScheme()
-  const [manualTheme, setManualTheme] = useState<Theme | null>(null);
+  const [manualTheme, setManualTheme] = useState<Theme>(systemTheme ?? 'light');
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -73,7 +73,7 @@ export const [ThemeProvider, useTheme] = createContextHook(() => {
     const newTheme = theme === "light" ? "dark" : "light";
     setManualTheme(newTheme);
     await AsyncStorage.setItem("manualTheme", newTheme);
-  }, []);
+  }, [manualTheme]);
 
   const theme = manualTheme ?? (systemTheme ?? "light");
   const colors = useMemo(() => theme === 'light' ? lightTheme : darkTheme, [theme]);
