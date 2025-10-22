@@ -1,5 +1,5 @@
 import { AuthProvider, useAuth } from "@/contexts/auth-context";
-import { ThemeProvider } from "@/contexts/theme-context";
+import { ThemeProvider, ThemeProviderWrapper } from "@/contexts/theme-context";
 import { UserProvider, useUser } from "@/contexts/user-context";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Stack } from "expo-router";
@@ -61,13 +61,15 @@ export default function RootLayout() {
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
-        <AuthProvider>
-          <UserProvider>
-            <GestureHandlerRootView style={styles.container}>
-              <RootLayoutNav />
-            </GestureHandlerRootView>
-          </UserProvider>
-        </AuthProvider>
+        <ThemeProviderWrapper>
+          <AuthProvider>
+            <UserProvider>
+              <GestureHandlerRootView style={styles.container}>
+                <RootLayoutNav />
+              </GestureHandlerRootView>
+            </UserProvider>
+          </AuthProvider>
+        </ThemeProviderWrapper>
       </ThemeProvider>
     </QueryClientProvider>
   );

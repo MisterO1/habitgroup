@@ -1,5 +1,9 @@
 import createContextHook from '@nkzw/create-context-hook';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { StatusBar } from "expo-status-bar";
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useColorScheme } from 'react-native';
+
 
 type Theme = 'light' | 'dark';
 
@@ -52,25 +56,45 @@ const darkTheme: ThemeColors = {
 };
 
 export const [ThemeProvider, useTheme] = createContextHook(() => {
-  const [theme, setTheme] = useState<Theme>('light');
+  const systemTheme = useColorScheme()
+  const [manualTheme, setManualTheme] = useState<Theme | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     setIsLoading(false);
+    async function loadTheme() {
+      const savedTheme = await AsyncStorage.getItem("manualTheme");
+      if (savedTheme === "light" || savedTheme === "dark") setManualTheme(savedTheme);
+    }
+    loadTheme();
   }, []);
 
-  const toggleTheme = useCallback(() => {
-    const newTheme = theme === 'light' ? 'dark' : 'light';
-    setTheme(newTheme);
-  }, [theme]);
+  const toggleTheme = useCallback( async () => {
+    const newTheme = theme === "light" ? "dark" : "light";
+    setManualTheme(newTheme);
+    await AsyncStorage.setItem("manualTheme", newTheme);
+  }, []);
 
+  const theme = manualTheme ?? (systemTheme ?? "light");
   const colors = useMemo(() => theme === 'light' ? lightTheme : darkTheme, [theme]);
 
   return useMemo(() => ({
     theme,
     colors,
     toggleTheme,
+    setManualTheme,
     isLoading,
     isDark: theme === 'dark',
   }), [theme, colors, toggleTheme, isLoading]);
 });
+
+export const ThemeProviderWrapper = ({ children }: { children: React.ReactNode }) => {
+  const { theme } = useTheme();
+
+  return (
+    <>
+      <StatusBar style={theme === "light" ? "dark" : "light"} />
+      {children}
+    </>
+  );
+};
