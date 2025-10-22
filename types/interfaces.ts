@@ -5,7 +5,6 @@ export type UserInfo = {
     name: string;
     email: string;
     avatar: string;
-    singleGroup: string;
     groups: string[];
     habits: string[];
     createdAt: Date;
@@ -43,16 +42,6 @@ export interface Group {
   ownerId: string,
   habits: string[],
   members: string[],
-  createdAt?: string,
-  private: boolean,
-}
-export interface SingleGroup {
-  id: string;
-  name: string,
-  description: string,
-  ownerId: string,
-  habits: string[],
-  members?: string[],
   createdAt?: string,
   private: boolean,
 }

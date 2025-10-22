@@ -11,11 +11,11 @@ import { ActivityIndicator, Alert, FlatList, StyleSheet, Text, TextInput, Toucha
 export default function CreateHabitScreen() {
   const { colors } = useTheme();
   const { userInfo } = useUser();
-  const { userSingleGroupZus, userGroupsZus } = useAppStore();
+  const { userGroupsZus } = useAppStore();
 
   const [loading, setLoading] = useState(false);
 
-  const [groupId, setGroupId] = useState<string | null>(userSingleGroupZus?.id || null);
+  const [groupId, setGroupId] = useState<string | null>(userGroupsZus[0].id || null);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   // currently not using custom date inputs; keep startDate as ISO string for createdAt in controller
@@ -57,7 +57,7 @@ export default function CreateHabitScreen() {
       Object.entries(habitData).forEach(([k, v]) => {
         if (v !== undefined && v !== null) cleaned[k] = v;
       });
-      const group = [userSingleGroupZus,...userGroupsZus].find(g => g?.id === groupId);
+      const group = userGroupsZus.find(g => g?.id === groupId);
       const memberIds: string[] = group?.members ?? [userInfo?.id || ''];
       const res = await createHabit(groupId, cleaned, memberIds);
       if ( res.id ) {
@@ -85,18 +85,6 @@ export default function CreateHabitScreen() {
             <FlatList
               horizontal={false}
               data={userGroupsZus}
-              ListHeaderComponent={(
-                <TouchableOpacity
-                    key={userSingleGroupZus?.id}
-                    onPress={() => userSingleGroupZus ? setGroupId(userSingleGroupZus.id) : null}
-                    style={[
-                        styles.groupOption,
-                        { backgroundColor: groupId === userSingleGroupZus?.id ? colors.primary : colors.card }
-                    ]}
-                    >
-                      <Text style={{ color: groupId === userSingleGroupZus?.id ? 'white' : colors.text }}>{userSingleGroupZus?.name}</Text>
-                    </TouchableOpacity>
-                 )}
               keyExtractor={(item) => item.id}
               renderItem={({ item: g }) => (
                 <TouchableOpacity

@@ -4,10 +4,10 @@ import HabitDetailsDropdown from '@/components/habit-details-dropdown';
 import { useTheme } from '@/contexts/theme-context';
 import { useUser } from '@/contexts/user-context';
 import { useAppStore } from '@/contexts/zustand';
-import { getSingleGroup, getUserGroups } from '@/controllers/group-controllers.tsx';
+import { getUserGroups } from '@/controllers/group-controllers.tsx';
 import { getHabitsScheduledForDate, getUserHabits } from '@/controllers/habit-controllers';
 import { createHabitProgress, getHabitProgressByDate, updateHabitProgress } from '@/controllers/habitProgress-controllers';
-import { Group, Habit, HabitProgress, SingleGroup } from '@/types/interfaces';
+import { Group, Habit, HabitProgress } from '@/types/interfaces';
 import { Stack, router } from 'expo-router';
 import { Plus } from 'lucide-react-native';
 import React, { useEffect, useState } from 'react';
@@ -17,46 +17,27 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 export default function DashboardScreen() {
   const { colors } = useTheme();
   const { userInfo } = useUser()
-  const { setUserSingleGroupZus, setUserGroupsZus, setUserHabitsZus,
-      userSingleGroupZus, userGroupsZus, userHabitsZus
+  if (!userInfo) return <Text>no User found</Text>
+
+  const { setUserGroupsZus, setUserHabitsZus,
+      userGroupsZus, userHabitsZus
    } = useAppStore();
   const [ userGroups, setUserGroups ] = useState<Group[]>([])
   const [ userHabits, setUserHabits ] = useState<Habit[]>([])
-  const [ singleGroup, setSingleGroup ] = useState<SingleGroup | null>(null)
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [expandedHabitId, setExpandedHabitId] = useState<string | null>(null);
   const [expandedGroupId, setExpandedGroupId] = useState<string | null>(null);
   const insets = useSafeAreaInsets();
 
   useEffect(() => {
-    const fetchSingleGroup = async () => {
-      if (!userInfo?.singleGroup) return;
-      if (userSingleGroupZus){
-        setSingleGroup(userSingleGroupZus)
-        console.log("userSingleGroupZus", userSingleGroupZus)
-        return
-      }
-
-      try {
-        const { data } = await getSingleGroup(userInfo.singleGroup);
-        if (!data) {
-          console.log("no singleGroup found for userId:", userInfo.id);
-          return;
-        }
-        console.log("fetched singlegroup")
-        setSingleGroup(data);
-        setUserSingleGroupZus(data);
-      } catch (error) {
-        console.error('Error fetching single group:', error);
-      }
-    };
+    
     const fetchUserGroups = async () => {
       if (!userInfo?.groups) return;
-      if (userGroupsZus.length > 0){
-        setUserGroups(userGroupsZus)
-        console.log("userGroupsZus",userGroupsZus)
-        return
-      }
+      // if (userGroupsZus.length > 0){
+      //   setUserGroups(userGroupsZus)
+      //   console.log("userGroupsZus",userGroupsZus)
+      //   return
+      // }
       try {
         const { data } = await getUserGroups(userInfo.groups);
         if (!data) {
@@ -72,12 +53,12 @@ export default function DashboardScreen() {
     };
 
     const fetchUserHabits = async () => {
-      if (!userInfo?.habits) return;
-      if (userHabitsZus.length > 0){
-        setUserHabits(userHabitsZus)
-        console.log("userHabitsZus",userHabitsZus)
-        return
-      }
+      if (userInfo.habits.length == 0) return;
+      // if (userHabitsZus.length > 0){
+      //   setUserHabits(userHabitsZus)
+      //   console.log("userHabitsZus",userHabitsZus)
+      //   return
+      // }
       
       try {
         const { data } = await getUserHabits(userInfo.habits);
@@ -93,12 +74,12 @@ export default function DashboardScreen() {
       }
     };
     
-    fetchSingleGroup();    
     fetchUserGroups();
     fetchUserHabits();
   }, [userInfo]);
 
   const getSelectedDateHabits = async () => {
+    
     const selectedHabits: {
       habit: Habit;
       completed: boolean;
@@ -107,7 +88,7 @@ export default function DashboardScreen() {
       comment?: string;
     }[] = [];
 
-    if (!userInfo?.habits) return selectedHabits;
+    if (userInfo.habits.length == 0) return selectedHabits;
     const { activeHabitIds } = await getHabitsScheduledForDate(userInfo.habits, new Date(selectedDate));
     if (activeHabitIds.length === 0) return selectedHabits;
     const activehabits = userHabits.filter(h => activeHabitIds.includes(h.id));
@@ -366,24 +347,6 @@ export default function DashboardScreen() {
             </TouchableOpacity>
           </View>
           
-          {singleGroup &&  (
-            <TouchableOpacity
-              key={singleGroup?.id}
-              style={[styles.groupCard, { backgroundColor: colors.card, borderColor: colors.border }]}
-              onPress={() => router.push(`/group/${singleGroup?.id}`)}
-            >
-              <Text style={[styles.groupName, { color: colors.text }]}>
-                {singleGroup?.name}
-              </Text>
-              <Text style={[styles.groupDescription, { color: colors.textSecondary }]}>
-                {singleGroup?.description}
-              </Text>
-              <Text style={[styles.groupMembers, { color: colors.textSecondary }]}>
-                {singleGroup?.habits.length} habits
-              </Text>
-            </TouchableOpacity>
-          )}
-          
           <FlatList
             data={userGroups}
             horizontal={true}
@@ -399,7 +362,7 @@ export default function DashboardScreen() {
                   {group?.description}
                 </Text>
                 <Text style={[styles.groupMembers, { color: colors.textSecondary }]}>
-                  {group?.members.length} members • {group?.habits.length} habits
+                  {group?.members?.length} members • {group?.habits?.length} habits
                 </Text>
               </TouchableOpacity>
             )}

@@ -1,4 +1,4 @@
-import { Group, GroupProgress, Habit, SingleGroup } from '@/types/interfaces';
+import { Group, GroupProgress, Habit } from '@/types/interfaces';
 import { db } from '@/utils/firebase';
 import { addDoc, arrayRemove, arrayUnion, collection, deleteDoc, doc, getDoc, getDocs, limit, orderBy, query, setDoc, updateDoc, where, writeBatch } from "firebase/firestore";
 import { Alert } from 'react-native';
@@ -25,35 +25,6 @@ export async function getAllGroups() {
   }
 }
 
-// get single group of a user
-export const getSingleGroup = async (singleGroupId:string) => {
-  try {
-      const singleGroupRef = doc(db, "singleGroups", singleGroupId)
-      const querySnap = await getDoc(singleGroupRef)
-      if (!querySnap.exists){
-        console.log(" No SingleGroup founded with Id :", singleGroupId)
-        return {data:null}
-      }
-
-      const data = querySnap.data()
-      //@ts-ignore
-      const dataFormated = { 
-        id: data?.id,//@ts-ignore
-        // ...data,
-        name: data.name ?? "",//@ts-ignore
-        description: data.description ?? "",//@ts-ignore
-        ownerId: data.ownerId ?? "",
-        habits: [],
-        createdAt: data?.createdAt ?? null,//@ts-ignore
-        private: data.private ?? true,
-      } as SingleGroup;
-    
-    return { data:dataFormated , error:null }
-  } catch (error) {
-    console.error("Error fetching user groups:", error);
-    return { data:null, error }
-  }
-}
 
 // get all groups of a user
 export const getUserGroups = async (groups:string[]) => {
@@ -339,16 +310,14 @@ export const createNewUserAndGroup = async (name: string, email:string, avatar='
 
     // 1. Create a new user document (Firestore will assign an ID)
     const newUserRef = doc(collection(db, "users")); // Get a ref with an auto-ID
-    const newGroupRef = doc(collection(db, "singleGroups"));
+    const newGroupRef = doc(collection(db, "groups"));
 
     const newUserData = {
         id: newUserRef.id,
         name: name,
         email: email,
         avatar: avatar,
-        singleGroup: newGroupRef.id,
-        singleGroupHabits: [],
-        groups: [],
+        groups: [newGroupRef.id],
         habits: [],
         createdAt: new Date().toISOString().split('T')[0],
     }
@@ -358,8 +327,9 @@ export const createNewUserAndGroup = async (name: string, email:string, avatar='
     const newGroupData = {
         createdAt: new Date(),
         ownerId: newUserRef.id,
-        name: "My Single Group",
+        name: "Personal Group",
         description: 'No one can join.',
+        members:[newUserRef.id],
         habits:[],
         private: true,
     }
@@ -367,7 +337,7 @@ export const createNewUserAndGroup = async (name: string, email:string, avatar='
 
     // Commit the batch
     await batch.commit();
-    console.log(`User ${name} and his "MySingleGroup" created successfully!`);
+    console.log(`User ${name} and his "Personal Group" created successfully!`);
 
     return { success: true, error: null }
   } catch (error) {
