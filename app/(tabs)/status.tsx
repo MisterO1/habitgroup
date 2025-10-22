@@ -3,10 +3,12 @@ import { useUser } from '@/contexts/user-context';
 import { useAppStore } from '@/contexts/zustand';
 import { mockStatuses } from '@/mocks/status-data';
 import { Status as StatusType } from '@/types/interfaces';
+import * as ImagePicker from 'expo-image-picker';
 import { Stack } from 'expo-router';
-import { Clock, Eye, Plus, X } from 'lucide-react-native';
+import { Clock, Eye, ImageIcon, Plus, Trash2, X } from 'lucide-react-native';
 import React, { useCallback, useState } from 'react';
 import {
+  Alert,
   Dimensions,
   Image,
   KeyboardAvoidingView,
@@ -38,6 +40,7 @@ export default function StatusScreen() {
   const [isCreateModalVisible, setIsCreateModalVisible] = useState(false);
   const [newStatusContent, setNewStatusContent] = useState('');
   const [selectedHabitTag, setSelectedHabitTag] = useState('general');
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
   const userGroupIds = userInfo?.groups
   const { userHabitsZus } = useAppStore()
@@ -88,6 +91,30 @@ export default function StatusScreen() {
     setSelectedStatus(null);
   }, []);
 
+  const handlePickImage = useCallback(async () => {
+    const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    
+    if (permissionResult.granted === false) {
+      Alert.alert('Permission Required', 'Permission to access camera roll is required!');
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 0.8,
+    });
+
+    if (!result.canceled && result.assets[0]) {
+      setSelectedImage(result.assets[0].uri);
+    }
+  }, []);
+
+  const handleRemoveImage = useCallback(() => {
+    setSelectedImage(null);
+  }, []);
+
   const handleCreateStatus = useCallback(() => {
     if (!newStatusContent.trim()) return;
 
@@ -97,6 +124,7 @@ export default function StatusScreen() {
       userName: userInfo?.name,
       userAvatar: userInfo.avatar,
       content: newStatusContent,
+      imageUrl: selectedImage || undefined,
       habitTag: selectedHabitTag,
       groupId: userGroupIds[0] || '',
       createdAt: new Date().toISOString(),
@@ -107,8 +135,9 @@ export default function StatusScreen() {
     setStatuses(prev => [newStatus, ...prev]);
     setNewStatusContent('');
     setSelectedHabitTag('general');
+    setSelectedImage(null)
     setIsCreateModalVisible(false);
-  }, [newStatusContent, selectedHabitTag, userInfo, userGroupIds]);
+  }, [newStatusContent, selectedHabitTag, userInfo, userGroupIds, selectedImage]);
 
   const getTimeAgo = (date: string) => {
     const now = new Date();
@@ -371,6 +400,33 @@ export default function StatusScreen() {
                 ))}
               </ScrollView>
 
+              <Text style={[styles.createModalLabel, { color: colors.textSecondary, marginTop: 16 }]}>Image (Optional)</Text>
+              {selectedImage ? (
+                <View style={styles.imagePreviewContainer}>
+                  <Image
+                    source={{ uri: selectedImage }}
+                    style={[styles.imagePreview, { backgroundColor: colors.border }]}
+                  />
+                  <TouchableOpacity
+                    style={[styles.removeImageButton, { backgroundColor: colors.surface }]}
+                    onPress={handleRemoveImage}
+                  >
+                    <Trash2 size={20} color={colors.text} />
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                <TouchableOpacity
+                  style={[
+                    styles.imagePickerButton,
+                    { backgroundColor: colors.card, borderColor: colors.border }
+                  ]}
+                  onPress={handlePickImage}
+                >
+                  <ImageIcon size={24} color={colors.textSecondary} />
+                  <Text style={[styles.imagePickerText, { color: colors.textSecondary }]}>Add Image</Text>
+                </TouchableOpacity>
+              )}
+
               <Text style={[styles.createModalLabel, { color: colors.textSecondary, marginTop: 16 }]}>Content</Text>
               <TextInput
                 style={[
@@ -394,10 +450,10 @@ export default function StatusScreen() {
                 style={[
                   styles.createModalButton,
                   { backgroundColor: colors.primary },
-                  !newStatusContent.trim() && { opacity: 0.5 }
+                  (!newStatusContent.trim() && !selectedImage) && { opacity: 0.5 }
                 ]}
                 onPress={handleCreateStatus}
-                disabled={!newStatusContent.trim()}
+                disabled={!newStatusContent.trim() && !selectedImage}
               >
                 <Text style={styles.createModalButtonText}>Post Status</Text>
               </TouchableOpacity>
@@ -685,5 +741,45 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
+  },
+  
+  imagePickerButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    borderWidth: 1,
+    borderRadius: 12,
+    borderStyle: 'dashed',
+    padding: 20,
+  },
+  imagePickerText: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  imagePreviewContainer: {
+    position: 'relative',
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  imagePreview: {
+    width: '100%',
+    height: 200,
+    borderRadius: 12,
+  },
+  removeImageButton: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
   },
 });
