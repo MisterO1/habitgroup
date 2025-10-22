@@ -362,6 +362,7 @@ export default function StatusScreen() {
       >
         <KeyboardAvoidingView 
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 80: 0}
           style={styles.createModalContainer}
         >
           <TouchableOpacity

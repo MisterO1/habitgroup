@@ -17,7 +17,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 export default function DashboardScreen() {
   const { colors } = useTheme();
   const { userInfo } = useUser()
-  const { setUserSingleGroupZus, setUserGroupsZus, setUserHabitsZus } = useAppStore();
+  const { setUserSingleGroupZus, setUserGroupsZus, setUserHabitsZus,
+      userSingleGroupZus, userGroupsZus, userHabitsZus
+   } = useAppStore();
   const [ userGroups, setUserGroups ] = useState<Group[]>([])
   const [ userHabits, setUserHabits ] = useState<Habit[]>([])
   const [ singleGroup, setSingleGroup ] = useState<SingleGroup | null>(null)
@@ -29,13 +31,19 @@ export default function DashboardScreen() {
   useEffect(() => {
     const fetchSingleGroup = async () => {
       if (!userInfo?.singleGroup) return;
-      
+      if (userSingleGroupZus){
+        setSingleGroup(userSingleGroupZus)
+        console.log("userSingleGroupZus", userSingleGroupZus)
+        return
+      }
+
       try {
         const { data } = await getSingleGroup(userInfo.singleGroup);
         if (!data) {
           console.log("no singleGroup found for userId:", userInfo.id);
           return;
         }
+        console.log("fetched singlegroup")
         setSingleGroup(data);
         setUserSingleGroupZus(data);
       } catch (error) {
@@ -44,13 +52,18 @@ export default function DashboardScreen() {
     };
     const fetchUserGroups = async () => {
       if (!userInfo?.groups) return;
-      
+      if (userGroupsZus.length > 0){
+        setUserGroups(userGroupsZus)
+        console.log("userGroupsZus",userGroupsZus)
+        return
+      }
       try {
         const { data } = await getUserGroups(userInfo.groups);
         if (!data) {
           console.log("no userGroups found for userId:", userInfo.id);
           return;
         }
+        console.log("fetched groups")
         setUserGroups(data);
         setUserGroupsZus(data);
       } catch (error) {
@@ -59,7 +72,12 @@ export default function DashboardScreen() {
     };
 
     const fetchUserHabits = async () => {
-      if (!userInfo?.groups) return;
+      if (!userInfo?.habits) return;
+      if (userHabitsZus.length > 0){
+        setUserHabits(userHabitsZus)
+        console.log("userHabitsZus",userHabitsZus)
+        return
+      }
       
       try {
         const { data } = await getUserHabits(userInfo.habits);
@@ -67,6 +85,7 @@ export default function DashboardScreen() {
           console.log("no userHabits found for userId:", userInfo.id);
           return;
         }
+        console.log("fetched habits")
         setUserHabits(data);
         setUserHabitsZus(data)
       } catch (error) {

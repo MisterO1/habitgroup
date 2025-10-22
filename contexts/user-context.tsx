@@ -3,6 +3,7 @@ import { db } from '@/utils/firebase';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { collection, getDocs, query, where } from 'firebase/firestore';
 import React, { createContext, Dispatch, SetStateAction, useContext, useEffect, useMemo, useState } from 'react';
+import { useAppStore } from './zustand';
 
 type UserContextValue = {
     userInfo: UserInfo | null;
@@ -48,6 +49,8 @@ export function UserProvider({ children } : { children: React.ReactNode }) {
   const clearUserInfo = async () => {
     setUserInfo(null)
     await AsyncStorage.removeItem("userInfo")
+    const { reset } = useAppStore()
+    reset()
   }
 
   const value = useMemo(() => ({ 
