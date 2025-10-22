@@ -5,7 +5,7 @@ import { mockStatuses } from '@/mocks/status-data';
 import { Status as StatusType } from '@/types/interfaces';
 import * as ImagePicker from 'expo-image-picker';
 import { Stack } from 'expo-router';
-import { Clock, Eye, ImageIcon, Plus, Trash2, X } from 'lucide-react-native';
+import { Camera, Clock, Eye, ImageIcon, Plus, Trash2, X } from 'lucide-react-native';
 import React, { useCallback, useState } from 'react';
 import {
   Alert,
@@ -101,6 +101,25 @@ export default function StatusScreen() {
 
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 0.8,
+    });
+
+    if (!result.canceled && result.assets[0]) {
+      setSelectedImage(result.assets[0].uri);
+    }
+  }, []);
+
+  const handleTakePhoto = useCallback(async () => {
+    const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
+    
+    if (permissionResult.granted === false) {
+      Alert.alert('Permission Required', 'Permission to access camera is required!');
+      return;
+    }
+
+    const result = await ImagePicker.launchCameraAsync({
       allowsEditing: true,
       aspect: [4, 3],
       quality: 0.8,
@@ -415,16 +434,28 @@ export default function StatusScreen() {
                   </TouchableOpacity>
                 </View>
               ) : (
-                <TouchableOpacity
-                  style={[
-                    styles.imagePickerButton,
-                    { backgroundColor: colors.card, borderColor: colors.border }
-                  ]}
-                  onPress={handlePickImage}
-                >
-                  <ImageIcon size={24} color={colors.textSecondary} />
-                  <Text style={[styles.imagePickerText, { color: colors.textSecondary }]}>Add Image</Text>
-                </TouchableOpacity>
+                <View style={styles.imageOptionsContainer}>
+                  <TouchableOpacity
+                    style={[
+                      styles.imageOptionButton,
+                      { backgroundColor: colors.card, borderColor: colors.border }
+                    ]}
+                    onPress={handleTakePhoto}
+                  >
+                    <Camera size={24} color={colors.primary} />
+                    <Text style={[styles.imageOptionText, { color: colors.text }]}>Take Photo</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[
+                      styles.imageOptionButton,
+                      { backgroundColor: colors.card, borderColor: colors.border }
+                    ]}
+                    onPress={handlePickImage}
+                  >
+                    <ImageIcon size={24} color={colors.primary} />
+                    <Text style={[styles.imageOptionText, { color: colors.text }]}>Choose Photo</Text>
+                  </TouchableOpacity>
+                </View>
               )}
 
               <Text style={[styles.createModalLabel, { color: colors.textSecondary, marginTop: 16 }]}>Content</Text>
@@ -743,17 +774,21 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   
-  imagePickerButton: {
+  imageOptionsContainer: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  imageOptionButton: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
     borderWidth: 1,
     borderRadius: 12,
-    borderStyle: 'dashed',
-    padding: 20,
+    padding: 16,
   },
-  imagePickerText: {
+  imageOptionText: {
     fontSize: 14,
     fontWeight: '600',
   },
