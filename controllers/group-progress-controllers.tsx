@@ -1,16 +1,17 @@
 import { GroupProgress } from "@/types/interfaces";
 import { db } from '@/utils/firebase';
-import { addDoc, collection, deleteDoc, doc, getDocs, query, updateDoc, where } from "firebase/firestore";
+import { collection, deleteDoc, doc, getDocs, query, setDoc, updateDoc, where } from "firebase/firestore";
 
 // create a GroupProgress controller file similar to HabitProgress controller file
 // each group document has its own progresses subcollection to store Group progress for all habits in that group
 
 // create a new document in the "progresses" subcollection of a specific group
-export const createGroupProgress = async ( groupId: string, groupProgressData: Partial<GroupProgress>) => {
+export const createGroupProgress = async ( groupId: string, groupProgressData: GroupProgress) => {
     try {
-        const groupProgressRef = collection(db, "groups", groupId, "progresses");
-        const docRef = await addDoc(groupProgressRef, groupProgressData);
-        return { success: true, id: docRef.id, error: null };
+        const docId = `gp_${groupProgressData.date.replace(/-/g, '')}_${groupProgressData.habitId}`;
+        const groupProgressRef = doc(db, "groups", groupId, "progresses", docId);
+        const docRef = await setDoc(groupProgressRef, groupProgressData);
+        return { success: true, id: docId, error: null };
     } catch (error) {
         console.error("Error creating group progress:", error);
         return { success: false, id: null, error: error };

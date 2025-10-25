@@ -21,6 +21,12 @@ interface ThemeColors {
   border: string;
   tabBar: string;
   tabBarActive: string;
+  good: string;
+  goodoff: string;
+  average: string;
+  averageoff:string;
+  bad: string;
+  badoff: string;
 }
 
 const lightTheme: ThemeColors = {
@@ -37,6 +43,12 @@ const lightTheme: ThemeColors = {
   border: '#E0E0E0',
   tabBar: '#FFFFFF',
   tabBarActive: '#2D7D32',
+  good: "#0d8305",
+  goodoff: "#0d830599",
+  average: "#e54900",
+  averageoff: "#e5490099",
+  bad: "#ed0005",
+  badoff: "#ed000599",
 };
 
 const darkTheme: ThemeColors = {
@@ -53,6 +65,12 @@ const darkTheme: ThemeColors = {
   border: '#333333',
   tabBar: '#1A1F1A',
   tabBarActive: '#4CAF50',
+  good: "#0d8305",
+  goodoff: "#0d830599",
+  average: "#e54900",
+  averageoff: "#e5490099",
+  bad: "#ed0005",
+  badoff: "#ed000599",
 };
 
 export const [ThemeProvider, useTheme] = createContextHook(() => {

@@ -82,6 +82,7 @@ export default function DashboardScreen() {
     
     const selectedHabits: {
       habit: Habit;
+      group: Group;
       completed: boolean;
       feeling?: string;
       hasComments: boolean;
@@ -106,8 +107,10 @@ export default function DashboardScreen() {
           console.error('Error fetching habit progress for habit:', habit.id);
           continue;
         }
+        const group = userGroups.find( g => g.id = habit.groupId)!
         selectedHabits.push({
           habit,
+          group,
           completed: habitProgress?.data?.completed || false,
           feeling: habitProgress?.data?.feeling || '',
           hasComments: habitProgress?.data?.comment ? true : false,
@@ -122,14 +125,16 @@ export default function DashboardScreen() {
     return selectedHabits;
   };
 
-  const handleHabitToggle = async (habitId: string, groupId: string, completed: boolean) => {
-    if (!habitId?.trim() || !groupId?.trim() || !userInfo) return;
+  const handleHabitToggle = async (habitId: string, group: Group, completed: boolean) => {
+    if (!habitId?.trim() || !group.id?.trim() || !userInfo) return;
     
     try {
       const habitProgressData: HabitProgress = {
         userId: userInfo.id,
         date: selectedDate,
         completed: !completed,
+        habitId,
+        groupId: group.id,
       };
 
       // Check if progress already exists
@@ -141,10 +146,10 @@ export default function DashboardScreen() {
 
       if (existingProgress) {
         // Update existing progress
-        await updateHabitProgress(habitId, { ...habitProgressData, id: existingProgress.id });
+        await updateHabitProgress(habitId, { ...habitProgressData, id: existingProgress.id }, group);
       } else {
         // Create new progress
-        await createHabitProgress(habitId, habitProgressData);
+        await createHabitProgress(habitId, habitProgressData, group);
       }
 
       // Refresh the data
@@ -168,8 +173,8 @@ export default function DashboardScreen() {
     }
   };
   
-  const handleHabitUpdate = async (habitId: string, groupId: string, completed: boolean, feeling?: string, comment?: string) => {
-    if (!habitId?.trim() || !groupId?.trim() || !userInfo) return;
+  const handleHabitUpdate = async (habitId: string, group: Group, completed: boolean, feeling?: string, comment?: string) => {
+    if (!habitId?.trim() || !group.id?.trim() || !userInfo) return;
     
     try {
       const habitProgressData: HabitProgress = {
@@ -178,6 +183,8 @@ export default function DashboardScreen() {
         completed: completed ?? false,
         feeling: feeling?.trim() as any ?? '',
         comment: comment?.trim() ?? '',
+        habitId,
+        groupId: group.id,
       };
 
       // Check if progress already exists
@@ -189,10 +196,10 @@ export default function DashboardScreen() {
 
       if (existingProgress) {
         // Update existing progress
-        await updateHabitProgress(habitId, { ...habitProgressData, id: existingProgress.id });
+        await updateHabitProgress(habitId, { ...habitProgressData, id: existingProgress.id }, group);
       } else {
         // Create new progress
-        await createHabitProgress(habitId, habitProgressData);
+        await createHabitProgress(habitId, habitProgressData, group);
       }
 
       // Refresh the data
@@ -216,6 +223,7 @@ export default function DashboardScreen() {
 
   const [selectedDateHabits, setSelectedDateHabits] = useState<{
     habit: Habit;
+    group: Group;
     completed: boolean;
     feeling?: string;
     hasComments: boolean;
@@ -285,7 +293,7 @@ export default function DashboardScreen() {
           </View>
 
           {selectedDateHabits.length > 0 ? (
-            selectedDateHabits.map(({ habit, completed, feeling, hasComments, comment }) => (
+            selectedDateHabits.map(({ habit, group, completed, feeling, hasComments, comment }) => (
               <React.Fragment key={`${habit.id}-${habit.groupId}`}>
                 <HabitCard
                   habit={habit}
@@ -293,7 +301,7 @@ export default function DashboardScreen() {
                   feeling={feeling}
                   hasComments={hasComments}
                   onPress={() => handleHabitPress(habit.id || '', habit.groupId)}
-                  onToggle={() => handleHabitToggle(habit.id || '', habit.groupId, completed)}
+                  onToggle={() => handleHabitToggle(habit.id || '', group, completed)}
                 />
                 {expandedHabitId === habit.id && expandedGroupId === habit.groupId && (
                   <HabitDetailsDropdown
@@ -307,7 +315,7 @@ export default function DashboardScreen() {
                       setExpandedGroupId(null);
                     }}
                     onUpdate={(completed, feeling, comment) => 
-                      handleHabitUpdate(habit.id || '', habit.groupId, completed, feeling, comment)
+                      handleHabitUpdate(habit.id || '', group, completed, feeling, comment)
                     }
                   />
                 )}

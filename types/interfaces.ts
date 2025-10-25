@@ -49,6 +49,8 @@ export interface Group {
 // habitProgress stored in progresses, SubCollection of habit collection
 export interface HabitProgress {
   id?: string // doc id => format: YYYYMMDD_userId
+  habitId: string,
+  groupId: string,
   userId: string,
   date: string,
   completed: boolean,
@@ -56,16 +58,9 @@ export interface HabitProgress {
   comment?: string;
 }
 
-export type HabitDayProgress  = {
-  id?: string,
-  date: string,
-  completionRate: number, //moyenne des completed des habitProgress pour cette date
-  totalMembers: number,
-}
-
 // GroupProgress is the average habitProgress of all members
 export type GroupProgress = {
-  id?: string,
+  id?: string, // doc id => format: YYYYMMDD_habitId
   date: string,
   habitId:string,
   completionRate: number, // moyenne des completionRate des habitDayProgress pour cette date

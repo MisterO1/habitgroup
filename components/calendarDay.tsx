@@ -7,6 +7,7 @@ type CalendarDayProps = {
   isToday?: boolean;
   showProgress?: boolean;
   progressColor?: string;
+  progressColorOff?: string;
   colors: {
     text: string;
     border: string;
@@ -23,6 +24,7 @@ export default function CalendarDay ({
   isToday = false,
   showProgress = false,
   progressColor = 'transparent',
+  progressColorOff = 'transparent',
   colors,
   onPress,
 }: CalendarDayProps) {
@@ -37,9 +39,9 @@ export default function CalendarDay ({
     <TouchableOpacity
       style={[
         styles.dayButton,
-        { borderColor: colors.border },
-        isSelected && { backgroundColor: colors.primary },
-        isToday && !isSelected && { borderColor: colors.primary, borderWidth: 2 },
+        { borderColor: progressColor, backgroundColor: progressColorOff  },
+        // isToday && { backgroundColor: colors.primary },
+        // isToday && !isSelected && { borderColor: colors.primary, borderWidth: 2 },
       ]}
       onPress={onPress}
       accessibilityRole="button"
@@ -49,19 +51,19 @@ export default function CalendarDay ({
         style={[
           styles.dayText,
           { color: colors.text },
-          isSelected && { color: 'white' },
+          isToday && { fontWeight: 'bold' },
         ]}
       >
         {day}
       </Text>
-      {showProgress && (
+      {/* {showProgress && (
         <View
           style={[
             styles.progressDot,
             { backgroundColor: progressColor },
           ]}
         />
-      )}
+      )} */}
     </TouchableOpacity>
   );
 };

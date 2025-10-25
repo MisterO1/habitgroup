@@ -1,6 +1,7 @@
-import { HabitProgress } from "@/types/interfaces";
+import { Group, HabitProgress } from "@/types/interfaces";
 import { db } from '@/utils/firebase';
-import { deleteDoc, doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
+import { collection, deleteDoc, doc, getDoc, getDocs, query, setDoc, updateDoc, where } from "firebase/firestore";
+import { createGroupProgress, updateGroupProgress } from "./group-progress-controllers";
 
 // habits collection and groups collection are top-level collections and have their own progresses subcollections
 // each habit document has its own progresses subcollection to store habit progress for that habit
@@ -40,12 +41,38 @@ export const getHabitProgressByDate = async (habitId: string, date: string, user
 }
 
 // create a new document in the "progresses" subcollection of a specific habit
-export const createHabitProgress = async ( habitId: string, habitProgressData: HabitProgress) => {
+export const createHabitProgress = async ( habitId: string, habitProgressData: HabitProgress, group: Group) => {
   try {
 
     const docId = `${habitProgressData.date.replace(/-/g, '')}_${habitProgressData.userId}`; // YYYYMMDD_userId
     const habitProgressRef = doc(db, "habits", habitId, "progresses", docId );
     await setDoc(habitProgressRef, habitProgressData);
+
+    // update groupProgress for this habit on that date
+    const groupId = group.id
+    const gpref = collection(db, "groups", habitId, "progresses")
+    const gq = query(gpref, where("date", "==", habitProgressData.date))
+    const gquerySnapshot = await getDocs(gq)
+
+    if (gquerySnapshot.empty){  // means the user is first one to push an habitProgress that day. so let's create the groupProgress
+      await createGroupProgress(groupId, {
+        date: habitProgressData.date,
+        habitId,
+        completionRate: ( habitProgressData.completed ? 1 : 0 ) / group.members.length,
+      })
+    } else { // means to update the completionRate with the one
+      const hpref = collection(db, "habits", habitId, "progresses")
+      const hq = query(hpref, where("date", "==", habitProgressData.date))
+      const hquerySnapshot = await getDocs(hq)
+      const habitProgressfiltered = hquerySnapshot.docs.filter( hp => hp.data().completed )
+      const newCompletionRate = habitProgressfiltered.length / group.members.length
+      await updateGroupProgress(
+        groupId,
+        habitProgressData.date,
+        newCompletionRate,
+      )
+    }    
+
     return { success: true, id: docId, error: null };
 
   } catch (error) {
@@ -55,26 +82,8 @@ export const createHabitProgress = async ( habitId: string, habitProgressData: H
   }
 };
 
-// Get habit progress for a specific habit
-// export const getHabitProgress = async (habitId: string) => {
-//   try {
-
-//     const habitProgressRef = collection(db, "habits", habitId, "progresses");
-//     const querySnapshot = await getDocs(habitProgressRef);
-//     const habitProgresses = querySnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-//     return { success: true, data: habitProgresses, error: null};
-
-//   } catch (error) {
-
-//     console.error("Error getting habit progress:", error);
-//     return { success: false, data: [], error: error};
-//   }
-// }
-
-// Get all progress for a group
-
 // Update habit progress for a specific habit
-export const updateHabitProgress = async (habitId: string, habitProgressData: HabitProgress) => {
+export const updateHabitProgress = async (habitId: string, habitProgressData: HabitProgress, group: Group) => {
   try {
 
     if (!habitProgressData.id) {
@@ -86,6 +95,28 @@ export const updateHabitProgress = async (habitId: string, habitProgressData: Ha
         feeling: habitProgressData.feeling || '',
         comment: habitProgressData.comment || '',
     });
+
+    // update GroupProgress
+    const hpref = collection(db, "habits", habitId, "progresses")
+    const q = query(hpref, where("date", "==", habitProgressData.date))
+    const querySnapshot = await getDocs(q)
+
+    if (querySnapshot.empty){  // means the user is first one to push an habitProgress that day. so let's create the groupProgress
+      await createGroupProgress(group.id, {
+        date: habitProgressData.date,
+        habitId,
+        completionRate: ( habitProgressData.completed ? 1 : 0 ) / group.members.length,
+      })
+    } else { // means to update the completionRate with the one
+      const habitProgressfiltered = querySnapshot.docs.filter( hp => hp.data().completed )
+      const newCompletionRate = habitProgressfiltered.length / group.members.length
+      await updateGroupProgress(
+        group.id,
+        habitProgressData.date,
+        newCompletionRate,
+      )
+    } 
+
     return { success: true, error: null};
 
   } catch (error) {

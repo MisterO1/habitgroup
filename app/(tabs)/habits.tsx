@@ -47,7 +47,7 @@ export default function HabitsScreen() {
   const last7Days = useMemo(() => getLast7Days(), []);
 
   // --- ⚙️ Nouveau state pour stocker les complétions ---
-  const [habitProgress, setHabitProgress] = useState<Record<string, completion[]>>({});
+  const [habitCompletion, seHabitCompletion] = useState<Record<string, completion[]>>({});
   const [loading, setLoading] = useState(true);
 
   // --- ⚙️ Charge les progressions de chaque habit ---
@@ -63,7 +63,7 @@ export default function HabitsScreen() {
           }
         }
 
-        setHabitProgress(result);
+        seHabitCompletion(result);
       } catch (err) {
         console.error("Error loading habit progress:", err);
       } finally {
@@ -175,7 +175,7 @@ export default function HabitsScreen() {
 
         {habitOfGroup.map(habit => {
           const completions =
-            habitProgress[`${habit.id}-${group.id}`] ||
+            habitCompletion[`${habit.id}-${group.id}`] ||
             ["not_started","not_started","not_started","not_started","not_started","not_started","not_started"];
           return renderHabitCard(habit, completions, group.id);
         })}
