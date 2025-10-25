@@ -63,12 +63,15 @@ export type HabitDayProgress  = {
   totalMembers: number,
 }
 
+// GroupProgress is the average habitProgress of all members
 export type GroupProgress = {
   id?: string,
   date: string,
+  habitId:string,
   completionRate: number, // moyenne des completionRate des habitDayProgress pour cette date
 }
 
+export type completion = "bad" | "average" | "good" | "not_started"
 
 export type Status = {
   id: string,

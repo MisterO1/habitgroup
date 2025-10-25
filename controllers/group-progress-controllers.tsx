@@ -51,11 +51,12 @@ export const deleteGroupProgress = async (groupId: string, groupProgressId: stri
 };
 
 // Get group progress for a specific date
-export const getGroupProgressByDate = async (groupId: string, date: string) => {
+export const getGroupProgressByDate = async (groupId: string, habitId: string, date: string) => {
     try {
         const groupProgressRef = collection(db, "groups", groupId, "progresses");
         const q = query(groupProgressRef,
             where("date", "==", date),
+            where("habitId", "==", habitId),
         );
         const querySnapshot = await getDocs(q);
 
@@ -70,8 +71,9 @@ export const getGroupProgressByDate = async (groupId: string, date: string) => {
             data: {
                 id: progressDoc.id,
                 date: progressData.date,
+                habitId: progressData.habitId,
                 completionRate: progressData.completionRate,
-            },
+            } as GroupProgress,
             error: null
         };
     } catch (error) {
