@@ -110,7 +110,7 @@ export default function DashboardScreen() {
           console.error('Error fetching habit progress for habit:', habit.id);
           continue;
         }
-        const group = userGroups.find( g => g.id = habit.groupId)!
+        const group = userGroups.find( g => g.id === habit.groupId)!
         selectedHabits.push({
           habit,
           group,

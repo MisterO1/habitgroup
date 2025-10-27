@@ -26,17 +26,17 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="status"
-        options={{
-          title: "Status",
-          tabBarIcon: ({ color }) => <Radio size={24} color={color} />,
-        }}
-      />
-      <Tabs.Screen
         name="habits"
         options={{
           title: "Habits",
           tabBarIcon: ({ color }) => <Award size={24} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="status"
+        options={{
+          title: "Status",
+          tabBarIcon: ({ color }) => <Radio size={24} color={color} />,
         }}
       />
       <Tabs.Screen
