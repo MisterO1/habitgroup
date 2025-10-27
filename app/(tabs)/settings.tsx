@@ -1,11 +1,13 @@
 import { useAuth } from '@/contexts/auth-context';
 import { useTheme } from '@/contexts/theme-context';
 import { useUser } from '@/contexts/user-context';
+import { signOutUser } from '@/controllers/auth-controllers';
 import { Stack, useRouter } from 'expo-router';
 import { Bell, HelpCircle, LogOut, Moon, Shield, Sun, User } from 'lucide-react-native';
 import React from 'react';
 import { ScrollView, StyleSheet, Switch, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
 
 export default function SettingsScreen() {
   const router = useRouter();
@@ -52,6 +54,17 @@ export default function SettingsScreen() {
       onPress: () => {},
     },
   ];
+
+  const handleSignOut = async () => {
+    try {
+      await signOutUser();
+      await clearUserInfo();
+      router.replace('/auth');
+    } catch (err) {
+      console.error('Sign out failed', err);
+    }
+  };
+   
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background, paddingTop: insets.top }]}>
@@ -149,21 +162,7 @@ export default function SettingsScreen() {
         <View style={[styles.section, { backgroundColor: colors.card }]}>
           <TouchableOpacity
             style={styles.settingItem}
-            onPress={async () => {
-              try {
-                // Optionally show a loading indicator or confirmation dialog here
-                const { signOutUser } = await import('@/controllers/auth-controllers');
-                await signOutUser();
-                await clearUserInfo()
-                // Optionally, navigate to the auth screen after sign out
-                // If using expo-router:
-                const { router } = await import('expo-router');
-                router.replace('/auth');
-              } catch (err) {
-                // Optionally handle error
-                console.error('Sign out failed', err);
-              }
-            }}
+            onPress={handleSignOut}
           >
             <View style={styles.settingLeft}>
               <LogOut size={20} color={colors.error} />

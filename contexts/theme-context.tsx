@@ -44,11 +44,11 @@ const lightTheme: ThemeColors = {
   tabBar: '#FFFFFF',
   tabBarActive: '#2D7D32',
   good: "#0d8305",
-  goodoff: "#0d830599",
+  goodoff: "#0d830533",
   average: "#e54900",
-  averageoff: "#e5490099",
+  averageoff: "#e5490033",
   bad: "#ed0005",
-  badoff: "#ed000599",
+  badoff: "#ed000533",
 };
 
 const darkTheme: ThemeColors = {
@@ -65,12 +65,12 @@ const darkTheme: ThemeColors = {
   border: '#333333',
   tabBar: '#1A1F1A',
   tabBarActive: '#4CAF50',
-  good: "#0d8305",
-  goodoff: "#0d830599",
-  average: "#e54900",
-  averageoff: "#e5490099",
-  bad: "#ed0005",
-  badoff: "#ed000599",
+  good: "#00ff00",
+  goodoff: "#00ff0030",
+  average: "#ff6d00",
+  averageoff: "#ff6d0030",
+  bad: "#ff0000",
+  badoff: "#ff00030",
 };
 
 export const [ThemeProvider, useTheme] = createContextHook(() => {

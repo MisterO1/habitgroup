@@ -19,13 +19,14 @@ const CATEGORY_ICONS: Record<string, string> = {
   others: '📌',
 };
 
-const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 export default function HabitsScreen() {
   const { colors } = useTheme();
   const { userInfo } = useUser();
   const insets = useSafeAreaInsets();
-  const { userGroupsZus, userHabitsZus } = useAppStore();
+  const { userGroupsZus, userHabitsZus, completionsZus, setCompletionZus } = useAppStore();
+  // console.log("userGroupsZus",userGroupsZus)
 
   if (!userInfo) return <Text>No User found</Text>;
 
@@ -37,7 +38,7 @@ export default function HabitsScreen() {
       date.setDate(today.getDate() - i);
       dates.push({
         date: date.toISOString().split('T')[0],
-        day: DAYS[date.getDay() === 0 ? 6 : date.getDay() - 1],
+        day: DAYS[date.getDay()],
         dayNum: date.getDate(),
       });
     }
@@ -47,7 +48,7 @@ export default function HabitsScreen() {
   const last7Days = useMemo(() => getLast7Days(), []);
 
   // --- ⚙️ Nouveau state pour stocker les complétions ---
-  const [habitCompletion, seHabitCompletion] = useState<Record<string, completion[]>>({});
+  const [habitCompletion, setHabitCompletion] = useState<Record<string, completion[]>>({});
   const [loading, setLoading] = useState(true);
 
   // --- ⚙️ Charge les progressions de chaque habit ---
@@ -55,24 +56,38 @@ export default function HabitsScreen() {
     const fetchProgress = async () => {
       try {
         const result: Record<string, completion[]> = {};
-
-        for (const group of userGroupsZus) {
-          for (const habit of userHabitsZus.filter(h => h.groupId === group.id)) {
-            const completions = await getGroupProgressForWeek(habit.id, group.id);
-            result[`${habit.id}-${group.id}`] = completions;
-          }
-        }
-
-        seHabitCompletion(result);
+  
+        const allPromises = userGroupsZus.flatMap((group) =>
+          userHabitsZus
+            .filter((h) => h.groupId === group.id)
+            .map(async (habit) => {
+              const key = `${habit.id}-${group.id}`;
+              // Use completions from store if available
+              if (completionsZus[key]) {
+                result[key] = completionsZus[key];
+              } else {
+                // Otherwise fetch from server
+                const completions = await getGroupProgressForWeek(habit.id, group.id);
+                result[key] = completions;
+              }
+            })
+        );
+  
+        // Exécute toutes les requêtes en parallèle
+        await Promise.all(allPromises);
+  
+        setHabitCompletion(result);
+        // console.log("habitCompletion", result);
       } catch (err) {
         console.error("Error loading habit progress:", err);
       } finally {
         setLoading(false);
       }
     };
-
+  
     fetchProgress();
-  }, [userGroupsZus, userHabitsZus]);
+  }, [userGroupsZus, userHabitsZus, completionsZus]);
+  
 
   // --- Fonction utilitaire ---
   const getGroupProgressForWeek = async (habitId: string, groupId: string) => {
@@ -80,16 +95,19 @@ export default function HabitsScreen() {
       last7Days.map(({ date }) => getGroupProgressByDate(groupId, habitId, date))
     );
 
-    let completions: completion[] = ["not_started","not_started","not_started","not_started","not_started","not_started","not_started"];
-    if (last7GroupProgress.length === 0) return completions;
-
     const weekProgress: number[] = [];
     for (let i = 0; i <= 6; i++) {
       weekProgress.push(last7GroupProgress[i].data?.completionRate ?? -1);
     }
 
-    completions = weekProgress.map(c =>
-      c === 1 ? "good" : c === 0 ? "bad" : c === -1 ? "average" : "not_started"
+    const completions: completion[] = weekProgress.map(c =>
+      c == 1
+        ? "good" 
+        : c == 0 
+        ? "bad" 
+        : c == -1 
+        ? "not_started" 
+        : "average"
     );
 
     return completions;
@@ -97,14 +115,23 @@ export default function HabitsScreen() {
 
   // --- 🧱 Rendu synchrone du habit ---
   const renderHabitCard = (habit: Habit, completions: completion[], groupId: string) => {
-    const completionsColors = completions.map(c =>
+    const borderColors = completions.map(c =>
       c == "good"
-        ? colors.success
+        ? colors.good
         : c == "bad"
-        ? colors.error
+        ? colors.bad
         : c == "average"
-        ? colors.warning
-        : colors.textSecondary
+        ? colors.average
+        : colors.border
+    );
+    const bgColors = completions.map(c =>
+      c == "good"
+        ? colors.goodoff
+        : c == "bad"
+        ? colors.badoff
+        : c == "average"
+        ? colors.averageoff
+        : "white"
     );
 
     const categoryIcon = CATEGORY_ICONS[habit.category] || '📌';
@@ -131,7 +158,7 @@ export default function HabitsScreen() {
         <View style={styles.weekView}>
           {completions.map((completion, index) => {
             const dayInfo = last7Days[index];
-            const isToday = dayInfo.date === new Date().toISOString().split('T')[0];
+            // const isToday = dayInfo.date === new Date().toISOString().split('T')[0];
 
             return (
               <View key={habit.id + dayInfo.date} style={styles.dayColumn}>
@@ -142,12 +169,12 @@ export default function HabitsScreen() {
                   style={[
                     styles.dayCircle,
                     {
-                      borderColor: isToday ? colors.primary : colors.border,
-                      backgroundColor: completionsColors[index] ?? colors.textSecondary,
+                      borderColor: borderColors[index] ?? colors.border,
+                      backgroundColor: bgColors[index] ?? colors.primary,
                     },
                   ]}
                 >
-                  <Text style={styles.dayNum}>{dayInfo.dayNum}</Text>
+                  <Text style={ [styles.dayNum, { color: colors.text }] }>{dayInfo.dayNum}</Text>
                 </View>
               </View>
             );
@@ -159,8 +186,25 @@ export default function HabitsScreen() {
 
   // --- 🧱 Rendu d’un groupe ---
   const renderGroupSection = (group: Group) => {
+    console.log(group.name, group.id)
     const habitOfGroup = userHabitsZus.filter(h => h.groupId == group.id);
-    if (habitOfGroup.length === 0) return null;
+    if (habitOfGroup.length === 0) return null 
+    //   {
+    //   return (
+    //     <View key={group.id} style={[styles.emptyState, { backgroundColor: colors.card }]}>
+    //       <Text style={[styles.emptyTitle, { color: colors.text }]}>{group.name}</Text>
+    //       <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
+    //         No Habit yet in this group.
+    //       </Text>
+    //       <TouchableOpacity
+    //         onPress={() => router.push('/create-habit')}
+    //         style={[styles.emptyButton, { backgroundColor: colors.primary }]}
+    //       >
+    //         <Text style={styles.emptyButtonText}>Create Habit</Text>
+    //       </TouchableOpacity>
+    //     </View>
+    //   )
+    // } ;
 
     return (
       <View key={group.id} style={styles.groupSection}>
@@ -177,6 +221,7 @@ export default function HabitsScreen() {
           const completions =
             habitCompletion[`${habit.id}-${group.id}`] ||
             ["not_started","not_started","not_started","not_started","not_started","not_started","not_started"];
+          console.log(completions)
           return renderHabitCard(habit, completions, group.id);
         })}
       </View>
@@ -268,7 +313,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  dayNum: { fontSize: 13, fontWeight: '600' },
+  dayNum: { fontSize: 13, fontWeight: '600'},
   emptyState: {
     margin: 16,
     padding: 40,
