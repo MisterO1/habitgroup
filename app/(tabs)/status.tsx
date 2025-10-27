@@ -1,12 +1,12 @@
 import { useTheme } from '@/contexts/theme-context';
 import { useUser } from '@/contexts/user-context';
 import { useAppStore } from '@/contexts/zustand';
-import { mockStatuses } from '@/mocks/status-data';
+import { createStatus, getUserStatuses, updateStatusViews } from '@/controllers/status-controllers';
 import { Status as StatusType } from '@/types/interfaces';
 import * as ImagePicker from 'expo-image-picker';
 import { Stack } from 'expo-router';
 import { Camera, Clock, Eye, ImageIcon, Plus, Trash2, X } from 'lucide-react-native';
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   Alert,
   Dimensions,
@@ -34,7 +34,8 @@ export default function StatusScreen() {
 
   // read status state
   const [selectedStatus, setSelectedStatus] = useState<StatusType | null>(null);
-  const [statuses, setStatuses] = useState<StatusType[]>(mockStatuses);
+  const [statuses, setStatuses] = useState<StatusType[]>([]);
+  const [loading, setLoading] = useState(true);
 
   // create status state
   const [isCreateModalVisible, setIsCreateModalVisible] = useState(false);
@@ -42,8 +43,37 @@ export default function StatusScreen() {
   const [selectedHabitTag, setSelectedHabitTag] = useState('general');
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
-  const userGroupIds = userInfo?.groups
-  const { userHabitsZus } = useAppStore()
+  const userGroupIds = userInfo?.groups;
+  const { userHabitsZus } = useAppStore();
+
+  // Fetch statuses from Firestore
+  useEffect(() => {
+    const fetchStatuses = async () => {
+      if (!userGroupIds || userGroupIds.length === 0) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        setLoading(true);
+        const { data, error } = await getUserStatuses(userGroupIds);
+        
+        if (error) {
+          console.error("Error fetching statuses:", error);
+          setStatuses([]);
+        } else if (data) {
+          setStatuses(data);
+        }
+      } catch (error) {
+        console.error("Error in fetchStatuses:", error);
+        setStatuses([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStatuses();
+  }, [userGroupIds]);
 
   const relevantStatuses = statuses.filter(status => 
     userGroupIds?.includes(status.groupId)
@@ -76,14 +106,18 @@ export default function StatusScreen() {
     return new Date(b.latestStatus.createdAt).getTime() - new Date(a.latestStatus.createdAt).getTime();
   });
 
-  const handleStatusView = useCallback((status: StatusType) => {
+  const handleStatusView = useCallback(async (status: StatusType) => {
     setSelectedStatus(status);
     if (!status.views.includes(userInfo?.id)) {
+      // Update in local state immediately for better UX
       setStatuses(prev => prev.map(s => 
         s.id === status.id 
-          ? { ...s, views: [...s.views, userInfo?.id] }
+          ? { ...s, views: [...s.views, userInfo.id] }
           : s
       ));
+      
+      // Update in Firestore
+      await updateStatusViews(status.id, userInfo.id);
     }
   }, [userInfo?.id]);
 
@@ -134,28 +168,39 @@ export default function StatusScreen() {
     setSelectedImage(null);
   }, []);
 
-  const handleCreateStatus = useCallback(() => {
-    if (!newStatusContent.trim()) return;
+  const handleCreateStatus = useCallback(async () => {
+    if (!newStatusContent.trim() && !selectedImage) return;
 
-    const newStatus: StatusType = {
-      id: Date.now().toString(),
-      userId: userInfo?.id,
-      userName: userInfo?.name,
-      userAvatar: userInfo.avatar,
-      content: newStatusContent,
-      imageUrl: selectedImage || undefined,
-      habitTag: selectedHabitTag,
-      groupId: userGroupIds[0] || '',
-      createdAt: new Date().toISOString(),
-      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
-      views: [],
-    };
+    try {
+      const statusData: Omit<StatusType, 'id'> = {
+        userId: userInfo.id,
+        userName: userInfo.name,
+        userAvatar: userInfo.avatar,
+        content: newStatusContent || '',
+        imageUrl: selectedImage || undefined,
+        habitTag: selectedHabitTag,
+        groupId: userGroupIds[0] || '',
+        createdAt: new Date().toISOString(),
+        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+        views: [],
+      };
 
-    setStatuses(prev => [newStatus, ...prev]);
-    setNewStatusContent('');
-    setSelectedHabitTag('general');
-    setSelectedImage(null)
-    setIsCreateModalVisible(false);
+      const { success, id, error } = await createStatus(statusData);
+      
+      if (success && id) {
+        const newStatus: StatusType = { id, ...statusData };
+        setStatuses(prev => [newStatus, ...prev]);
+        setNewStatusContent('');
+        setSelectedHabitTag('general');
+        setSelectedImage(null);
+        setIsCreateModalVisible(false);
+      } else {
+        Alert.alert("Error", "Failed to create status");
+      }
+    } catch (error) {
+      console.error("Error creating status:", error);
+      Alert.alert("Error", "Failed to create status");
+    }
   }, [newStatusContent, selectedHabitTag, userInfo, userGroupIds, selectedImage]);
 
   const getTimeAgo = (date: string) => {
@@ -215,7 +260,13 @@ export default function StatusScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.content}
       >
-        {users.length > 0 ? (
+        {loading ? (
+          <View style={[styles.emptyState, { backgroundColor: colors.card }]}>
+            <Text style={[styles.emptyTitle, { color: colors.text }]}>
+              Loading statuses...
+            </Text>
+          </View>
+        ) : users.length > 0 ? (
           <>
             <ScrollView
               horizontal
