@@ -68,6 +68,7 @@ export const useAppStore = create(
 export const clearAppStore = async () => {
   try {
     await AsyncStorage.removeItem("ghabit-storage");
+    useAppStore.getState().reset() // reset en mémoire
     console.log("🧼 Cache Zustand supprimé avec succès !");
   } catch (e) {
     console.error("❌ Erreur lors de la suppression du cache :", e);
