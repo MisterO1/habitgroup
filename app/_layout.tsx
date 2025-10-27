@@ -40,7 +40,7 @@ function RootLayoutNav() {
     )
   }
 
-  console.log("user connected", userInfo)
+  console.log("user connected", userInfo?.email, "groups", userInfo?.groups,"habits", userInfo?.habits)
   
   return (
     <Stack screenOptions={{ headerBackTitle: "Back" }}>

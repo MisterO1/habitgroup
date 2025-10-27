@@ -20,7 +20,7 @@ export const useAppStore = create(
       userGroupsZus: [],
       userHabitsZus: [],
       completionsZus: {},
-      setUserGroupsZus: (groups) => set({ userGroupsZus: groups }),
+      setUserGroupsZus: (groups) => set( () => ({ userGroupsZus: [...groups] })),
       setUserHabitsZus: (habits) => set({ userHabitsZus: habits }),
       setCompletionZus: (completions) => set({ completionsZus: completions }),
       updateHabitCompletion: (habitId, groupId, completions) =>
@@ -40,8 +40,36 @@ export const useAppStore = create(
     {
       name: "ghabit-storage",// key for the storage
       storage: createJSONStorage(() => AsyncStorage),
+      version: 2,
+      migrate: (persistedState, version) => {
+        if (version < 2) {
+          console.log("⚠️ Ancien cache détecté, reset du store...");
+          const emptyState: AppState = {
+            userGroupsZus: [],
+            userHabitsZus: [],
+            completionsZus: {},
+            setUserGroupsZus: () => {},
+            setUserHabitsZus: () => {},
+            setCompletionZus: () => {},
+            updateHabitCompletion: () => {},
+            reset: () => {},
+          };
+          return emptyState;
+        }
+
+        // Sinon, on garde les données existantes
+        return persistedState as AppState;
+      }
     }
   )
 );
 
-
+// --- 🧹 Fonction utilitaire : reset complet du cache ---
+export const clearAppStore = async () => {
+  try {
+    await AsyncStorage.removeItem("ghabit-storage");
+    console.log("🧼 Cache Zustand supprimé avec succès !");
+  } catch (e) {
+    console.error("❌ Erreur lors de la suppression du cache :", e);
+  }
+};

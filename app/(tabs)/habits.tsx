@@ -25,8 +25,11 @@ export default function HabitsScreen() {
   const { colors } = useTheme();
   const { userInfo } = useUser();
   const insets = useSafeAreaInsets();
-  const { userGroupsZus, userHabitsZus, completionsZus, setCompletionZus } = useAppStore();
+  const { userGroupsZus, userHabitsZus, completionsZus, setCompletionZus, reset } = useAppStore();
   // console.log("userGroupsZus",userGroupsZus)
+  console.log(userGroupsZus.map(g => g.id));
+  console.log(userHabitsZus.map(h => `${h.id}-${h.groupId}`))
+
 
   if (!userInfo) return <Text>No User found</Text>;
 
@@ -87,6 +90,13 @@ export default function HabitsScreen() {
   
     fetchProgress();
   }, [userGroupsZus, userHabitsZus, completionsZus]);
+  
+  useEffect(() => {
+    if (userGroupsZus.length && userHabitsZus.some(h => !userGroupsZus.find(g => g.id === h.groupId))) {
+      console.warn("Habits liés à des groupes inexistants, reset en cours...");
+      reset();
+    }
+  }, [userGroupsZus, userHabitsZus]);
   
 
   // --- Fonction utilitaire ---
@@ -186,7 +196,7 @@ export default function HabitsScreen() {
 
   // --- 🧱 Rendu d’un groupe ---
   const renderGroupSection = (group: Group) => {
-    console.log(group.name, group.id)
+    // console.log(group.name, group.id)
     const habitOfGroup = userHabitsZus.filter(h => h.groupId == group.id);
     if (habitOfGroup.length === 0) return null 
     //   {
@@ -207,7 +217,7 @@ export default function HabitsScreen() {
     // } ;
 
     return (
-      <View key={group.id} style={styles.groupSection}>
+      <View key={group.id ?? `temp-${Math.random()}`} style={styles.groupSection}>
         <View style={styles.groupHeader}>
           <View style={styles.groupHeaderContent}>
             <Text style={[styles.groupName, { color: colors.text }]}>{group.name}</Text>
@@ -221,7 +231,7 @@ export default function HabitsScreen() {
           const completions =
             habitCompletion[`${habit.id}-${group.id}`] ||
             ["not_started","not_started","not_started","not_started","not_started","not_started","not_started"];
-          console.log(completions)
+          // console.log(completions)
           return renderHabitCard(habit, completions, group.id);
         })}
       </View>
